@@ -6,22 +6,49 @@ private:
     
     bool samplesChanged;
     int cacheCharLimit;
+    float fontSize;
     int fontIndex;
     float lineHeight;
+    int horizontalAlign, verticalAlign;
     ofColor backgroundColor;
     float hersheyStroke;
-    float hersheyColor;
     ofColor strokeColor;
     ofxHersheyFont hershey;
     ofFbo fbo;
     
-    std::map<string, ofTrueTypeFont> fontCache;
-    std::map<string, ofFbo> fboCache;
+    bool shouldRedraw;
     
-    string defineFont(int index, float fontSize) {
+    
+    std::map<string, ofTrueTypeFont> fontCache;
+    std::map<string, ofFbo *> fboCache;
+    
+    
+    void findAllOccurances(std::vector<size_t> & vec, std::string data, std::string toSearch)
+    {
+        // Get the first occurrence
+        size_t pos = data.find(toSearch);
         
-        if (index == 0) return "Hershey";
-        string fontName = fontList[index];
+        // Repeat till end is reached
+        while( pos != std::string::npos)
+        {
+            // Add position to the vector
+            vec.push_back(pos);
+            
+            // Get the next occurrence from the current position
+            pos =data.find(toSearch, pos + toSearch.size());
+        }
+    }
+    
+    string getFboKey(string text) {
+        string key = fontList[fontIndex] + ofToString(fontSize) + ofToString(strokeColor.r) + ofToString(strokeColor.g) + ofToString(strokeColor.b) + ofToString(strokeColor.a) + ofToString(numSamples) + ofToString(isBackgroundEnabled) + text + ofToString(horizontalAlign) + ofToString(lineHeight);
+        if (fontIndex == 0 ) key += ofToString(hersheyStroke);
+        return key;
+    }
+    
+    string defineFont() {
+        
+        if (fontIndex == 0) return "Hershey";
+        string fontName = fontList[fontIndex];
         string fontKey = fontName + ofToString( fontSize );
         auto it = fontCache.find(fontKey);
         if (it == fontCache.end()) {
@@ -34,120 +61,139 @@ private:
         return fontKey;
     }
     
-    
-    ofRectangle getBounds(string text, ofRectangle boundingBox, float fontSize, int horizontalAlign = -1, int verticalAlign = 0) {
+    ofRectangle getBounds(string text, int x, int y) {
         ofRectangle b;
+        
         if (fontIndex == 0) {
-            b = hershey.getBounds(text, 0, 0);
+            b = hershey.getBounds(text, x, y);
         } else {
-            string fontKey = defineFont(fontIndex, fontSize);
-            b = fontCache[fontKey].getStringBoundingBox(text, 0, 0);
+            string fontKey = defineFont();
+            b = fontCache[fontKey].getStringBoundingBox(text, x, y);
         }
-        
-        b.x = boundingBox.x;
-        b.y = boundingBox.y;
-        
-        if (horizontalAlign == 1) b.x += boundingBox.width - b.width;
-        if (horizontalAlign == 0) b.x += (boundingBox.width/2) - (b.width/2);
-        
-        if (verticalAlign == 1) b.y += b.height;
-        if (verticalAlign == 0) b.y += (boundingBox.height/2) + (b.height/2);
-        if (verticalAlign == -1) b.y += boundingBox.height;
+//        ofRectangle boundingBox, float fontSize, int horizontalAlign = -1, int verticalAlign = 0
+//        b.x = boundingBox.x;
+//        b.y = boundingBox.y;
+//
+//        if (horizontalAlign == 1) b.x += boundingBox.width - b.width;
+//        if (horizontalAlign == 0) b.x += (boundingBox.width/2) - (b.width/2);
+//
+//        if (verticalAlign == 1) b.y += b.height;
+//        if (verticalAlign == 0) b.y += (boundingBox.height/2) + (b.height/2);
+//        if (verticalAlign == -1) b.y += boundingBox.height;
         
         return b;
     }
-    ofRectangle drawFbo(string text, ofRectangle boundingBox, float fontSize, int horizontalAlign = -1, int verticalAlign = 0) {
+    
+    void getParagraph(string text, ofRectangle boundingBox, vector<int> & lineBreaks, int & totalHeight, int & iterateChars) {
         
-        ofRectangle b = getBounds(text, boundingBox, fontSize, horizontalAlign, verticalAlign);
+        /** Produces totalHeight and lineBreaks **/
         
-        hershey.setScale(fontSize *  (1.0 / 21.0));
+        int iterateWidth = 0;
+        totalHeight += (int)(fontSize * lineHeight);
         
+        for (auto & word : ofSplitString(text, " ")) {
+            
+            
+            ofRectangle b = getBounds(word + "_", 0, 0);
+            iterateWidth += b.width;
+            if (iterateWidth > boundingBox.width) {
+                iterateWidth = b.width;
+                totalHeight += (int)(fontSize * lineHeight);
+                lineBreaks.push_back(iterateChars);
+            }
+            iterateChars += word.size() + 1;
+        }
+    }
+    
+    vector<int> formatParagraphs(string & text, ofRectangle & boundingBox) {
         
         int totalHeight = 0;
-        int iterateWidth = 0;
         int iterateChars = 0;
         vector<int> lineBreaks = {0};
         
-        if (b.width > boundingBox.width) {
-            for (auto & word : ofSplitString(text, " ")) {
-                
-                ofRectangle b;
-                
-                if (fontIndex == 0) {
-                    b = hershey.getBounds(word + "_", 0, 0);
-                } else {
-                    string fontKey = defineFont(fontIndex, fontSize);
-                    b = fontCache[fontKey].getStringBoundingBox(word + "_", 0, 0);
-                }
-                
-                
-                iterateWidth += b.width;
-                if (iterateWidth > boundingBox.width) {
-                    iterateWidth = b.width;
-                    totalHeight += fontSize * lineHeight;
-                    if (totalHeight + (fontSize * lineHeight) >= boundingBox.height) {
-                        text = text.substr(0, iterateChars - 3) + "...";
-                        totalHeight = boundingBox.height;
-                        break;
-                    }
-                    lineBreaks.push_back(iterateChars);
-                }
-                iterateChars += word.size() + 1;
-            }
-            
+        string originalText = text;
+        
+        std::string::size_type i = 0u;
+        while((i = text.find("\n")) != std::string::npos){
+            text = text.replace(i, 1, " ");
         }
+        
+            
+        vector<string> paragraphs  = ofSplitString(originalText, "\n");
+        int iterPara = 0;
+        for (auto paragraph : paragraphs) {
+            getParagraph(paragraph, boundingBox, lineBreaks, totalHeight, iterateChars);
+            if (paragraph != paragraphs.back()) {
+                iterPara += paragraph.size() + 1;
+                lineBreaks.push_back(iterPara);
+            }
+        }
+        
+        boundingBox.height = totalHeight;
+        return lineBreaks;
+    }
+    
+    ofRectangle drawFbo(string text, ofRectangle boundingBox) {
+        
+        
+        int initialWidth = getBounds(text, 0, 0).width;
+        ofRectangle b = boundingBox;
+        ofRectangle fboBox = boundingBox;
         
         
         ofFill();
         ofSetColor(strokeColor);
-        string fontKey = defineFont(fontIndex, fontSize);
+        string fontKey = defineFont();
         
         
-        if (b.width > boundingBox.width) {
+//        if (initialWidth > boundingBox.width) {
+        
             
-            b.x = boundingBox.x;
-            b.width = boundingBox.width;
-            b.y = boundingBox.y;
-            b.height = (fontSize * lineHeight) * (lineBreaks.size());
-            if (verticalAlign == -1)  b.y += boundingBox.height - b.height;
-            if (verticalAlign == 0)  b.y += (boundingBox.height - b.height)/2;
+            vector<int> lineBreaks = formatParagraphs(text, fboBox);
             
             for (int i = 0; i < lineBreaks.size(); i++) {
-                int yy =  b.y + ( (lineHeight * fontSize) * i );
-                string line = text.substr(lineBreaks[i], lineBreaks[i + 1] - lineBreaks[i]);
                 
-                if (line.substr(line.size() - 1, line.size()) == " ") line = line.substr(0, line.size() - 1);
+                int breakA = lineBreaks[i];
+                int breakB = lineBreaks[i + 1] - lineBreaks[i];
                 
-                ofRectangle rect(boundingBox.x, yy, boundingBox.width, fontSize * lineHeight);
-                rect = getBounds(line, rect, fontSize, horizontalAlign, 0);
+                string line = text.substr(breakA, breakB);
                 
-                
-                if (fontIndex == 0) {
-                    hershey.draw(line, (int)rect.x, (int)rect.y);
-                } else {
-                    fontCache[fontKey].drawString(line, (int)rect.x, (int)rect.y);
+                if (line != "") {
+                    
+                    if (line.substr(line.size() - 1, line.size()) == " ") {
+                        line = line.substr(0, line.size() - 1);
+                    }
+                    int linePix = (int)(fontSize * lineHeight);
+                    ofRectangle rect(0, ( linePix * i ) + linePix, boundingBox.width, linePix);
+                    rect = getBounds(line, rect.x, rect.y);
+                    if (horizontalAlign == 0) rect.x = (boundingBox.width - rect.width) /2;
+                    if (horizontalAlign == 1) rect.x = (boundingBox.width - rect.width) ;
+                    
+                    if (fontIndex == 0) {
+                        hershey.draw(line, (int)rect.x, (int)rect.y);
+                    } else {
+                        fontCache[fontKey].drawString(line, (int)rect.x, (int)rect.y);
+                    }
                 }
                 
             }
-        } else {
-            if (fontIndex == 0) {
-                hershey.draw(text, (int)b.x, (int)b.y);
-                b.y -= hershey.getHeight();
-            } else {
-                fontCache[fontKey].drawString(text, (int)b.x, (int)b.y);
-                b.y -= fontSize * lineHeight  + fontCache[fontKey].getDescenderHeight();
-                b.height = fontSize * lineHeight; //fontCache[fontKey].getAscenderHeight() + fontCache[fontKey].getDescenderHeight();
-            }
-            
-//            b.y -= fontSize;
-        }
+//        } else {
+//            if (fontIndex == 0) {
+//                hershey.draw(text, (int)b.x, (int)b.y);
+//                b.y -= hershey.getHeight();
+//            } else {
+//                fontCache[fontKey].drawString(text, (int)b.x, (int)b.y);
+//                b.y -= fontSize * lineHeight  + fontCache[fontKey].getDescenderHeight();
+//                b.height = fontSize * lineHeight; //fontCache[fontKey].getAscenderHeight() + fontCache[fontKey].getDescenderHeight();
+//            }
+//        }
         
 //        ofNoFill();
 //        ofSetColor(255,255,0);
 //        ofDrawRectangle(b);
         
         
-        return b;
+        return fboBox;
     }
     
 public:
@@ -156,8 +202,18 @@ public:
     int numSamples;
     bool isCachingFbo;
     bool isBackgroundEnabled;
+    
+    void flagRedraw() {
+        shouldRedraw = true;
+    }
+    
+    void setLineHeight(float lHeight) {
+        lineHeight = lHeight;
+    }
+    
     void setup(string fontLocation = "") {
     
+        shouldRedraw = false;
         samplesChanged = false;
         isBackgroundEnabled = false;
         isCachingFbo = true;
@@ -214,9 +270,16 @@ public:
         hershey.setStroke(stroke);
     }
     
-    ofRectangle draw(string text, ofRectangle boundingBox, float fontSize, int horizontalAlign = -1, int verticalAlign = 0) {
-        
-        if (!isCachingFbo) return drawFbo(text, boundingBox, fontSize, horizontalAlign, verticalAlign);
+    void clearFboCache() {
+        fboCache.clear();
+    }
+    
+    ofRectangle draw(string text, glm::vec3 originPoint, float fSize, int horzAlign = -1, int vertAlign = 0) {
+        ofPoint p(originPoint.x, originPoint.y);
+        ofxPrecisionText::draw(text, p, fSize, horzAlign, vertAlign);
+    }
+    
+    ofRectangle draw(string text, ofPoint originPoint, float fSize, int horzAlign = -1, int vertAlign = 0) {
         
 #ifdef TARGET_OPENGLES
         int type = GL_RGBA;
@@ -229,24 +292,128 @@ public:
 #else
         int sample = numSamples;
 #endif
-        if ((fbo.getWidth() != boundingBox.width) || (fbo.getHeight() != boundingBox.height) || samplesChanged) {
-            fbo.allocate(boundingBox.width, boundingBox.height, type, numSamples);
+        
+        ofRectangle b(0,0, 999999, 999999);
+        fontSize = fSize;
+        horizontalAlign = horzAlign;
+        verticalAlign = vertAlign;
+        hershey.setScale(fontSize *  (1.0 / 21.0));
+        
+        ofFbo * fbo;
+        string fboKey = getFboKey(text);
+        auto it = fboCache.find(fboKey);
+        if (it == fboCache.end()) {
+            fbo = new ofFbo();
+            string textCopy = text;
+            formatParagraphs(textCopy, b);
+            fbo->allocate(b.width, b.height, type, numSamples);
             samplesChanged = false;
-            ofLogNotice("[ofxPrecisionText]") << "Setting FBO with " << numSamples << " samples";
+            ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << numSamples << " samples, " << originPoint.x << " x " << originPoint.y;
+            fboCache[fboKey] = fbo;
+            
+            
+        } else {
+            fbo = fboCache[fboKey];
         }
         
-        fbo.begin();
-        ofClear(0, 0, 0, 0);
-        if (isBackgroundEnabled) ofBackground(backgroundColor);
-        ofPushMatrix();
-        ofTranslate(-boundingBox.x, -boundingBox.y);
-        ofRectangle returnedRectangle = drawFbo(text, boundingBox, fontSize, horizontalAlign, verticalAlign);
-        ofPopMatrix();
-        fbo.end();
+        int xx = originPoint.x;
+        int yy = originPoint.y;
         
-        fbo.draw(boundingBox.x, boundingBox.y);
+        if (verticalAlign == 0) yy += fbo->getHeight() / 2;
+        if (verticalAlign == -1) yy += fbo->getHeight();
         
-        return returnedRectangle;
+        if (horizontalAlign == 0) xx += fbo->getWidth() / 2;
+        if (horizontalAlign == 1) yy += fbo->getWidth();
+        
+        ofSetColor(0,0,255);
+        ofRectangle fboBox(xx,yy,fbo->getWidth(), fbo->getHeight());
+        ofDrawRectangle(fboBox);
+        
+        
+        if (it == fboCache.end() || shouldRedraw) {
+            
+            fbo->begin();
+            ofClear(255,0);
+            ofSetColor(255);
+            if (isBackgroundEnabled) ofBackground(backgroundColor);
+            ofPushMatrix();
+            string textCopy = text;
+            drawFbo(textCopy, b);
+            ofPopMatrix();
+            fbo->end();
+            shouldRedraw = false;
+        }
+        
+        ofSetColor(255);
+        fbo->draw(xx, yy);
+        return fboBox;
+    }
+    
+    ofRectangle draw(string text, ofRectangle boundingBox, float fSize, int horzAlign = -1, int vertAlign = 0) {
+        
+#ifdef TARGET_OPENGLES
+        int type = GL_RGBA;
+#else
+        int type = GL_RGBA32F_ARB;
+#endif
+        
+#ifdef TARGET_RASPBERRY_PI
+        int samples = 0;
+#else
+        int sample = numSamples;
+#endif
+        
+        fontSize = fSize;
+        horizontalAlign = horzAlign;
+        verticalAlign = vertAlign;
+        hershey.setScale(fontSize *  (1.0 / 21.0));
+        
+        ofFbo * fbo;
+        string fboKey = getFboKey(text);
+        auto it = fboCache.find(fboKey);
+        if (it == fboCache.end()) {
+            fbo = new ofFbo();
+            ofRectangle b = boundingBox;
+            string textCopy = text;
+            formatParagraphs(textCopy, b);
+            fbo->allocate(b.width, b.height, type, numSamples);
+            samplesChanged = false;
+            ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << numSamples << " samples, " << b.width << " x " << b.height;
+            fboCache[fboKey] = fbo;
+            
+            
+        } else {
+            fbo = fboCache[fboKey];
+        }
+        
+        int xx = boundingBox.x;
+        int yy = boundingBox.y;
+        if (verticalAlign == 0) yy += (boundingBox.height - fbo->getHeight()) / 2;
+        if (verticalAlign == -1) yy += (boundingBox.height - fbo->getHeight());
+        
+        ofSetColor(0,0,255);
+        ofRectangle fboBox(xx,yy,fbo->getWidth(), fbo->getHeight());
+        ofDrawRectangle(fboBox);
+
+        ofSetColor(255);
+        
+        if (it == fboCache.end() || shouldRedraw) {
+        
+            fbo->begin();
+            ofClear(255,0);
+            ofSetColor(255);
+            if (isBackgroundEnabled) ofBackground(backgroundColor);
+            ofPushMatrix();
+            string textCopy = text;
+            drawFbo(textCopy, boundingBox);
+            ofPopMatrix();
+            fbo->end();
+            shouldRedraw = false;
+        }
+        
+        ofSetColor(255);
+        fbo->draw(xx, yy);
+        return fboBox;
         
     }
     

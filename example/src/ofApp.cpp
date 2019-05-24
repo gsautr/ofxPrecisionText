@@ -1,13 +1,15 @@
 #include "ofApp.h"
 
+
 //--------------------------------------------------------------
 void ofApp::setup(){
     text.setup();
     horizontalAlign = 0;
     verticalAlign = 0;
     fontSize = 14;
-    fontStroke = 1;
+    fontStroke = 2;
     fontIndex = 0;
+    lineHeight = 1.2;
     
     ofSetFrameRate(60.0f);
     
@@ -28,26 +30,34 @@ void ofApp::draw(){
     
     ofSetColor(255);
     text.setColor(ofColor(255));
-    text.setStroke(2);
+    text.setStroke(fontStroke);
     text.setFont(fontIndex);
+    text.setLineHeight(lineHeight);
+    ofSetLineWidth(fontStroke);
+    ofPoint point = B.getCenter();
+    text.draw("Hello World", point, fontSize, horizontalAlign , verticalAlign);
+    text.draw("In pretium leo ut erat auctor auctor. Donec in est imperdiet, faucibus tellus at, ullamcorper mauris. Phasellus at erat tincidunt, tempus arcu et, aliquam est. \n\n\nPhasellus at erat tincidunt, tempus arcu et, aliquam est. Phasellus at erat tincidunt, tempus arcu et, aliquam est.", A, fontSize, horizontalAlign , verticalAlign);
     
-    text.draw("Hello World", B, fontSize, horizontalAlign , verticalAlign);
-    text.draw("In pretium leo ut erat auctor auctor. Donec in est imperdiet, faucibus tellus at, ullamcorper mauris. Phasellus at erat tincidunt, tempus arcu et, aliquam est. Aliquam egestas rutrum aliquet. Sed venenatis ullamcorper scelerisque. Mauris rhoncus neque ut consectetur vestibulum. Curabitur ac ullamcorper nisi. Ut nunc sem, viverra eu lorem eu, sagittis congue nulla. Aliquam nulla orci, fermentum sed turpis sit amet, tincidunt consequat ligula. Donec mattis, enim non auctor dignissim, nibh libero sagittis nibh, nec malesuada libero neque ac felis. ", A, fontSize, horizontalAlign , verticalAlign);
     
-    
-    text.draw("Arrow Keys = Alignment, Q/W = FontSize, E/R = FBO Samples, Spacebar = Enable FBO, B = Enable FBO Background", C, fontSize, horizontalAlign , verticalAlign);
+//    text.draw("Arrow Keys = Alignment, Q/W = FontSize, E/R = FBO Samples, Spacebar = Enable FBO, B = Enable FBO Background", C, fontSize, horizontalAlign , verticalAlign);
     
     
     ofNoFill();
     ofSetColor(0,255,255);
     ofDrawRectangle(A);
-    ofDrawRectangle(B);
+    ofDrawCircle(B.getCenter(), 4);
     ofDrawRectangle(C);
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
 
+    if (key == 'a') fontStroke -= 0.2;
+    if (key == 's') fontStroke += 0.2;
+    
+    if (key == 'd') lineHeight -= 0.05;
+    if (key == 'f') lineHeight += 0.05;
+    
     if (key == 'e') { text.enableCache(text.numSamples - 1); }
     if (key == 'r') { text.enableCache(text.numSamples + 1); }
     
@@ -73,8 +83,8 @@ void ofApp::keyPressed(int key){
     if (key == OF_KEY_DOWN && verticalAlign > -1) verticalAlign -= 1;
     if (key == OF_KEY_UP && verticalAlign < 1) verticalAlign += 1;
     
-    if (key == 'q') fontSize -= 1;
-    if (key == 'w') fontSize += 1;
+    if (key == 'q') fontSize -= 0.5;
+    if (key == 'w') fontSize += 0.5;
     key -= 49;
     if (key >= 0 && key <= 9) fontIndex = key;
     

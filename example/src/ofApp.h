@@ -3,6 +3,7 @@
 #include "ofMain.h"
 #include "ofxPrecisionText.h"
 
+
 class ofApp : public ofBaseApp{
 	public:
 		void setup();
@@ -23,5 +24,6 @@ class ofApp : public ofBaseApp{
     
         ofxPrecisionText text;
         int horizontalAlign, verticalAlign;
-        int fontSize, fontStroke, fontIndex;
+        int fontIndex;
+        float fontStroke, fontSize, lineHeight;
 };

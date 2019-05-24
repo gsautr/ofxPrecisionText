@@ -162,32 +162,42 @@ void ofxHersheyFont::draw(string stringValue, ofRectangle rectangle, int horizon
 void ofxHersheyFont::drawChar(int asciiValue, float stroke) {
 	
 	ofPath chPath;
+    ofPolyline line;
+    
+//    line.begin();
 
 	//move to first coordinate
 	chPath.moveTo(simplex[asciiValue - 32][2], simplex[asciiValue - 32][3]);
+//    line.addVertex(simplex[asciiValue - 32][2], simplex[asciiValue - 32][3]);
 
 	//iterate through points of the character
 	for (int i = 4; i <= simplex[asciiValue - 32][0] * 2; i += 2)
 	{
 		int x = simplex[asciiValue - 32][i];
 		int y = simplex[asciiValue - 32][i + 1];
-
-		if (x != -1) chPath.lineTo(x, y);
+        
+        if (x != -1) chPath.lineTo(x, y);
+//        if (x != -1) line.addVertex(x, y);
 
 		//skip -1,-1 value -> equals pen up operation / end of a line
 		//and move to next point
-		if (x == -1) {
-			chPath.moveTo(simplex[asciiValue - 32][i + 2], simplex[asciiValue - 32][i + 3]);
+        if (x == -1) {
+            chPath.moveTo(simplex[asciiValue - 32][i + 2], simplex[asciiValue - 32][i + 3]);
+//            line.addVertex(simplex[asciiValue - 32][i + 2], simplex[asciiValue - 32][i + 3]);
 			i += 2;
 		}
 	}
 	
+//    line.end();
 	chPath.setStrokeColor(color);
 	chPath.setStrokeWidth(stroke);
 	chPath.setFilled(false);
     
 //    ofEnableAntiAliasing();
-	chPath.draw();
+    chPath.draw();
+//    line.draw();
+    
+    
     
 //    ofDisableAntiAliasing();
 }
