@@ -49,26 +49,26 @@ void ofApp::draw(){
     
     vector<ofRectangle> fboRects;
     
-    fboRects.push_back( text.draw("ofPoint", ofPoint(B.x, 100), 26, -1, 0) );
-    
-    fboRects.push_back( text.draw("Hello World", point, fontSize, horizontalAlign , verticalAlign) );
-    fboRects.push_back( text.draw("Hello World", C, fontSize, horizontalAlign , verticalAlign) );
-    
-    fboRects.push_back( text.draw("ofRectangle", ofPoint(A.x, 100), 26, -1, 0) );
-    
-    fboRects.push_back( text.draw("In pretium leo ut erat auctor auctor. Donec in est imperdiet, faucibus tellus at, ullamcorper mauris. Phasellus at erat tincidunt, tempus arcu et, aliquam est. \n\n\nPhasellus at erat tincidunt, tempus arcu et, aliquam est. Phasellus at erat tincidunt, tempus arcu et, aliquam est.", A, fontSize, horizontalAlign , verticalAlign) );
+//    fboRects.push_back( text.draw("ofPoint", ofPoint(B.x, 100), 26, -1, 0) );
+//
+//    fboRects.push_back( text.draw("Hello Worldqgp", point, fontSize, horizontalAlign , verticalAlign) );
+//    fboRects.push_back( text.draw("Hello World", C, fontSize, horizontalAlign , verticalAlign) );
+//
+//    fboRects.push_back( text.draw("ofRectangle", ofPoint(A.x, 100), 26, -1, 0) );
+//
+    fboRects.push_back( text.draw("Hello [Hrlink](www.google.com) Wofsdfsdf \n fdsf \nrld fds dfds fdsf ds [Link2](www.wiki.com) ", A, fontSize, horizontalAlign , verticalAlign) );
     
     
     text.setStroke(1.2);
     text.setFont(0);
     
-    fboRects.push_back( text.draw("ofxPrecisionText", ofPoint(D.x, 100), 26, -1, 0) );
+    fboRects.push_back( text.draw("ofxPrecision**Bold**And**Italic**", ofPoint(D.x, 100), 26, -1, 0) );
     
     text.setLineHeight(2);
     
     string outputA = "";
     
-    outputA += "Font Index: " + ofToString(fontIndex);
+    outputA += "Font: " + ofToString(text.fontList[fontIndex]);
     outputA += "\nFont Size: " + ofToString(fontSize);
     outputA += "\nFont Stroke: " + ofToString(fontStroke);
     outputA += "\nLine Height: " + ofToString(lineHeight);
@@ -77,17 +77,17 @@ void ofApp::draw(){
     outputA += "\nHorz Align: " + ofToString(horizontalAlign);
     
     string outputB = "";
-    
-    outputB += "\n\nW/E: -/+ Font Size";
-    outputB += "\nz/X: -/+ Font Index";
+    ;
+    outputB += "\n\nz/X: -/+ Font";
+    outputB += "\nW/E: -/+ Font Size";
     outputB += "\nA/S: -/+ Font Stroke";
     outputB += "\nD/F: -/+ Line Height";
     outputB += "\nE/R: -/+ FBO Samples";
     outputB += "\nArrow Keys: Vert/Horz Align";
     
-    text.draw(outputA, D, 12, -1, 1);
-    text.setColor(ofColor(0,255,255));
-    text.draw(outputB, E, 12, -1, 1);
+//    text.draw(outputA, D, 12, -1, 1);
+//    text.setColor(ofColor(0,255,255));
+//    text.draw(outputB, E, 12, -1, 1);
     
     ofNoFill();
     ofSetColor(0,255,255, 50);
@@ -101,8 +101,8 @@ void ofApp::draw(){
     
     
     ofSetColor(255);
-    ofDrawLine(fboRects[5].getBottomLeft(), fboRects[5].getBottomRight());
-    ofDrawLine(fboRects[5].getBottomLeft(), fboRects[5].getBottomRight());
+//    ofDrawLine(fboRects[5].getBottomLeft(), fboRects[5].getBottomRight());
+//    ofDrawLine(fboRects[5].getBottomLeft(), fboRects[5].getBottomRight());
 }
 
 //--------------------------------------------------------------
@@ -115,6 +115,10 @@ void ofApp::keyPressed(int key){
     
     if (key == 'z') fontIndex -= 1;
     if (key == 'x') fontIndex += 1;
+    
+    int fontMax = text.fontList.size() - 1;
+    if (fontIndex < 0) fontIndex = fontMax;
+    if (fontIndex > fontMax) fontIndex = 0;
     
     if (key == 'd') lineHeight -= 0.05;
     if (key == 'f') lineHeight += 0.05;

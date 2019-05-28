@@ -1,9 +1,31 @@
 #pragma once
 #include "ofxHersheyFont.h"
 
+struct ofxPrecisionTextHyperlink {
+    int start;
+    int end;
+    string url;
+};
+
+struct ofxPrecisionTextStructure {
+    vector<int> lineBreakIndexes;
+    vector<int> boldIndexes;
+    vector<int> italicIndexes;
+    vector<int> newLines;
+    ofRectangle boundingBox;
+    vector<ofxPrecisionTextHyperlink> hyperLinks;
+};
+
+struct ofxPrecisionTextRegex {
+    int start;
+    int size;
+    string match;
+};
+
 class ofxPrecisionText {
 private:
     
+    bool isBold, isItalic, isHyperlink;
     bool samplesChanged;
     int cacheCharLimit;
     float hersheyStroke;
@@ -13,7 +35,8 @@ private:
     ofFbo fbo;
     
     bool shouldRedraw;
-    
+    vector<int> regexReplace(string & text, string reg);
+    vector<ofxPrecisionTextRegex>  getMatchedStrings (string subject, string reg);
     std::map<string, ofTrueTypeFont> fontCache;
     std::map<string, ofFbo *> fboCache;
     
@@ -23,9 +46,9 @@ private:
 
     ofRectangle getBounds(string text, int x, int y); /*-- Get bounds for single text string --*/
     
-    void getParagraph(string text, ofRectangle boundingBox, vector<int> & lineBreaks, int & totalHeight, int & totalWidth, int & iterateChars); /*-- Produces total width + height, and line breaks for a paragraph string --*/
+    void drawString(string fontKey, string text, int xx, int yy);
     
-    vector<int> formatParagraphs(string & text, ofRectangle & boundingBox); /*-- Format a text string into paragraphs and line breaks, and update bounding box to reflect this --*/
+    void formatParagraphs(string & text, ofRectangle & boundingBox); /*-- Format a text string into paragraphs and line breaks, and update bounding box to reflect this --*/
     
     ofRectangle drawFbo(string text, ofRectangle boundingBox); /*-- Draw text string with line breaks and formatting --*/
     

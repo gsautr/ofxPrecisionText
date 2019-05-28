@@ -1,7 +1,7 @@
 
 #pragma once
 #include "ofxPrecisionText.h"
-
+#include <regex>
     
 string ofxPrecisionText::getFboKey(string text) {
 
@@ -46,79 +46,194 @@ ofRectangle ofxPrecisionText::getBounds(string text, int x, int y) {
     return b;
 }
 
-void ofxPrecisionText::getParagraph(string text, ofRectangle boundingBox, vector<int> & lineBreaks, int & totalHeight, int & totalWidth, int & iterateChars) {
+
+vector<int> replaceAndGenerateIndexes(string & text, string find) {
+    vector<int> indexes;
     
-    /*-- Produces total width + height, and line breaks for a paragraph string --*/
-    
-    int iterateWidth = 0;
-    totalHeight += (int)(fontSize * lineHeight);
-    
-    for (auto word : ofSplitString(text, " ")) {
-        
-        
-        ofRectangle b = getBounds(word + "_", 0, 0);
-        
-        
-        iterateWidth += b.width;
-        if (iterateWidth > totalWidth) {
-            totalWidth = iterateWidth;
-        }
-        if (iterateWidth > boundingBox.width) {
-            iterateWidth = b.width;
-            totalHeight += (int)(fontSize * lineHeight);
-            lineBreaks.push_back(iterateChars);
-        }
-        iterateChars += word.size() + 1;
+    int i = 0;
+    for (auto & split : ofSplitString(text, find)) {
+        i += split.size();
+        indexes.push_back(i);
+        ofLog() << "SPLIT: " << split;
     }
+    
+    string t = text;
+    size_t pos = t.find(find);
+    // Repeat till end is reached
+    while( pos != std::string::npos)
+    {
+        // Replace this occurrence of Sub String
+        t.replace(pos, find.size(), "");
+        // Get the next occurrence from the current position
+        pos = t.find(find, pos);
+        ofLog() << t << " " << pos;
+    }
+    text = t;
+    
+    return indexes;
 }
 
-vector<int> ofxPrecisionText::formatParagraphs(string & text, ofRectangle & boundingBox) {
+
+vector<int> generateIndexes(string text, string find) {
+    
+    vector<int> indexes;
+    string::size_type pos = 0;
+    while ( (pos = text.find(find, pos)) != string::npos) {
+        indexes.push_back(pos);
+        text.replace(pos, find.size(), "");
+        pos += find.size();
+    }
+    
+    return indexes;
+}
+
+vector<ofxPrecisionTextRegex> ofxPrecisionText::getMatchedStrings (string subject, string reg ){
+    
+    vector<ofxPrecisionTextRegex> results;
+    try {
+        regex re(reg);
+        sregex_iterator next(subject.begin(), subject.end(), re);
+        sregex_iterator end;
+        
+        while (next != end) {
+            smatch match = *next;
+            ofxPrecisionTextRegex m;
+            m.start = next->position();
+            m.size = std::distance(next, end);
+            m.match = next->str();
+            results.push_back(m);
+            next++;
+        }
+    } catch (std::regex_error& e) {
+        // Syntax error in the regular expression
+        ofLogError("Error in regular expression");
+    }
+    return results;
+}
+
+vector<int> ofxPrecisionText::regexReplace(string & text, string regex) {
+    
+    vector<int> indexes;
+    int iter = 0;
+    for (auto & reg : getMatchedStrings(text, regex)) {
+        ofLog() << "Regex inner: " << reg.match << " " << reg.start;
+        text.replace(reg.start - iter, reg.match.size(), "");
+        indexes.push_back(iter);
+        iter += reg.match.size();
+    }
+    
+    return indexes;
+}
+
+void ofxPrecisionText::formatParagraphs(string & text, ofRectangle & boundingBox) {
     
     /*-- Format a text string into paragraphs and line breaks, and update bounding box to reflect this --*/
 
+    
+    ofxPrecisionTextStructure structure;
+    
+    int iter = 0;
+    for (auto & reg : getMatchedStrings(text, "\\[\\w+?\\](\\([-:/.[:alnum:]]+?\\))")) {
+        ofLog() << "Links " << reg.match << " " << reg.start;
+        
+        int mid = reg.match.find("](");
+        string url = reg.match.substr(mid + 2, reg.match.size() - mid);
+        string title = reg.match.substr(1, mid - 1);
+
+        text.replace(reg.start - iter, reg.match.size(),  title);
+        
+        ofxPrecisionTextHyperlink link;
+        link.start = reg.start;
+        link.end = reg.start + reg.match.size();
+        link.url = url;
+        structure.hyperLinks.push_back(link);
+        
+        iter += reg.match.size() - title.size();
+    }
+//    structure.boldIndexes = regexReplace(text, "[**][\w\W]*[**]");
+//    structure.italicIndexes = regexReplace(text, "[*][\w\W]*[*]");
+    structure.newLines = regexReplace(text, "\n");
+    
+    
+    
     int totalHeight = 0;
     int totalWidth = 0;
+    
+    int iChars = 0;
+    int iWidth = 0;
+    int iX = 0;
+    int iY = 0;
+    
+    vector<ofRectangle> charRects;
+    
+    string fontKey = defineFont();
+    
     int iterateChars = 0;
-    vector<int> lineBreaks = {0};
     
-    string originalText = text;
     
-    std::string::size_type i = 0u;
-    while((i = text.find("\n")) != std::string::npos){
-        text = text.replace(i, 1, " ");
-    }
-    
+    for (auto & paragraph : ofSplitString(text, "\n")) {
         
-    vector<string> paragraphs  = ofSplitString(originalText, "\n");
-    int iterPara = 0;
-    for (auto paragraph : paragraphs) {
-        getParagraph(paragraph, boundingBox, lineBreaks, totalHeight, totalWidth, iterateChars);
-        if (paragraph != paragraphs.back()) {
-            iterPara += paragraph.size() + 1;
-            lineBreaks.push_back(iterPara);
+        /*-- Produces total width + height, and line breaks for a paragraph string --*/
+        
+        int iterateWidth = 0;
+        
+        totalHeight += (int)(fontSize * lineHeight);
+        
+        for (auto & word : ofSplitString(paragraph, " ")) {
+            
+            ofRectangle b = getBounds(word + "_", 0, 0);
+            
+            iterateWidth += b.width;
+            if (iterateWidth > totalWidth) {
+                totalWidth = iterateWidth;
+            }
+            if (iterateWidth > boundingBox.width) {
+                iterateWidth = b.width;
+                totalHeight += (int)(fontSize * lineHeight);
+                text.insert(iterateChars, "\n");
+            }
+            iterateChars += word.size() + 1;
         }
     }
-    if (lineBreaks.size() > 1) totalWidth = boundingBox.width;
-    boundingBox.width = totalWidth;
     
-    float extra = 0;
-    if (fontIndex != 0) {
-        extra = (fontSize * 0.25) + 1;
+    
+    
+    
+    
+    boundingBox.width = totalWidth;
+    boundingBox.height = totalHeight;
+    boundingBox.height += (fontIndex != 0) ? (fontSize * 0.25) + 1 : fontSize * 0.5;
+    
+    structure.boundingBox = boundingBox;
+    
+}
+
+void ofxPrecisionText::drawString(string fontKey, string text, int xx, int yy) {
+    
+    ofSetColor(strokeColor);
+    hershey.setStroke( (isBold) ? hersheyStroke + 1 : hersheyStroke );
+    
+    if (fontIndex == 0) {
+        hershey.draw(text, xx, yy + (fontSize * 0.25));
     } else {
-        extra = fontSize * 0.5;
+        fontCache[fontKey].drawString(text, xx, yy);
     }
-    boundingBox.height = totalHeight + (int)extra;
-    return lineBreaks;
 }
 
 ofRectangle ofxPrecisionText::drawFbo(string text, ofRectangle boundingBox) {
 
+    isBold = false;
+    isItalic = false;
+    isHyperlink = false;
+    
     /*-- Draw text string with line breaks and formatting --*/
     
     ofLogNotice("[ofxPrecisionText]") << "Drawing fbo, " << boundingBox.width << "x" << boundingBox.height;
     
     int initialWidth = getBounds(text, 0, 0).width;
     int initialHeight = getBounds("ITPBgyq", 0, 0).height;
+    int descenderHeight = (fontIndex != 0) ? initialHeight * 1.75 : initialHeight + 1;
+    
     ofRectangle b = boundingBox;
     ofRectangle fboBox = boundingBox;
     
@@ -127,44 +242,50 @@ ofRectangle ofxPrecisionText::drawFbo(string text, ofRectangle boundingBox) {
     ofSetColor(strokeColor);
     string fontKey = defineFont();
     
-    vector<int> lineBreaks = formatParagraphs(text, fboBox);
+    formatParagraphs(text, fboBox);
     
-    if (lineBreaks.size() == 1) lineBreaks.push_back(text.size());
+    int linePix = (int)(fontSize * lineHeight);
     
-    for (int i = 0; i < lineBreaks.size(); i++) {
+    int iLine = 0;
+    int iterChars = 0;
+    
+    vector<ofRectangle> charRects;
+    
+    
+    
+    
+    for (auto & line : ofSplitString(text, "\n")) {
         
-        int breakA = lineBreaks[i];
-        int breakB = lineBreaks[i + 1] - lineBreaks[i];
+        /*-- Define horizontal & vertical positioning --*/
         
-        string line = text.substr(breakA, breakB);
+        int xx = 0;
+        int yy = (linePix * iLine) + descenderHeight;
+        ofRectangle rect = getBounds(line, 0, yy);
+        if (horizontalAlign == 0) xx = (fboBox.width - rect.width) /2;
+        if (horizontalAlign == 1) xx = (fboBox.width - rect.width) ;
         
-        if (line != "") {
-            
-            if (line.substr(line.size() - 1, line.size()) == " ") {
-                line = line.substr(0, line.size() - 1);
-            }
-            
-            int linePix = (int)(fontSize * lineHeight);
-            int extra = 0;
-            
-            if (fontIndex != 0) {
-                extra = initialHeight * 1.75;
-            } else {
-                extra = initialHeight + 1;
-            }
-            
-            ofRectangle rect = getBounds(line, 0, (linePix * i) + extra);
-            
-            if (horizontalAlign == 0) rect.x = (boundingBox.width - rect.width) /2;
-            if (horizontalAlign == 1) rect.x = (boundingBox.width - rect.width) ;
-            
-            ofSetColor(strokeColor);
-            if (fontIndex == 0) {
-                hershey.draw(line, (int)rect.x, (int)rect.y);
-            } else {
-                fontCache[fontKey].drawString(line, (int)rect.x, (int)rect.y);
-            }
+        
+        int iterX = xx;
+        
+        for ( int i = 0; i < line.size() ; i++) {
+            string letter = line.substr(i, 1);
+            charRects.push_back( getBounds( letter, iterX, yy) );
+            drawString(fontKey, letter, charRects.back().x, charRects.back().y);
+            iterX += charRects.back().width;
         }
+        
+//        for (auto & piece : ofSplitString(line, "**")) {
+        
+//            for (auto & pieceItal : ofSplitString(boldPiece, "))
+//            drawString(fontKey, piece, iterBoldWidth, yy );
+//            iterBoldWidth += getBounds(piece, 0, 0).width;
+//            if (piece != ofSplitString(line, "**").back() ) isBold = !isBold;
+//        }
+        
+        
+        
+        iLine  += 1;
+        
         
     }
     
@@ -273,7 +394,7 @@ ofRectangle ofxPrecisionText::draw(string text, ofPoint originPoint, float fSize
     if (it == fboCache.end()) {
         fbo = new ofFbo();
         string textCopy = text;
-        formatParagraphs(textCopy, b);
+        b = drawFbo(textCopy, b);
         ofLog() << " Allocate " << b.width << " " << b.height;
         fbo->allocate(b.width, b.height, type, numSamples);
         samplesChanged = false;
