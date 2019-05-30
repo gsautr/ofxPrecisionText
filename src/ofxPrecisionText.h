@@ -38,23 +38,29 @@ struct ofxPrecisionTextStructure {
 };
 
 struct ofxPrecisionTextRegex {
-    int start;
+    string toBeReplaced;
+    int originalStart;
     int size;
+    int start;
+    int end;
     string match;
+    int type;
 };
 
 
-#include "parse_markdown.h"
+#include "parseMarkdown.h"
 
 class ofxPrecisionText {
 private:
     
+    float dpi;
     int fboType;
     
     ofShader italicShader;
     vector<string> splitString(int fromChar, string text, vector<int>);
     bool samplesChanged;
     int cacheCharLimit;
+    float headingScale;
     float hersheyStroke;
     float hersheyBaseline;
     ofColor strokeColor;
@@ -75,7 +81,7 @@ private:
     
     string getFboKey(string text); /*-- Get unique hash for FBO cache --*/
     
-    string defineFont(); /*-- Loads TTF to cache and returns font cache key --*/
+    string defineFont(float fSize); /*-- Loads TTF to cache and returns font cache key --*/
 
     ofRectangle getBounds(string text, float fSize, float x, float y); /*-- Get bounds for single text string --*/
     bool hasLink(vector<ofxPrecisionTextHyperlink> links, int i, ofxPrecisionTextHyperlink & link);
@@ -105,6 +111,8 @@ public:
     void setFboSamples(int fboSamples = 8);  /*-- Set number of antialiasing passes --*/
     
     void clearFboCache();
+    
+    void setHeadingScale(float hScale);
     
     void setFont(int index); /*-- Set font via index --*/
     

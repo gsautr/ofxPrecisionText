@@ -4,13 +4,10 @@
 #include <regex>
 
 
-/**
- * Bool
- */
-bool need_paragraph = true;
-bool current_paragraph = false;
-bool current_list = false;
 
+void ofxPrecisionText::setHeadingScale(float hScale) {
+    headingScale = hScale;
+}
 
 bool ofxPrecisionText::allocateFbo(string fboKey, string text, ofRectangle boundingBox, bool isPoint) {
     
@@ -37,13 +34,13 @@ string ofxPrecisionText::getFboKey(string text) {
     return key;
 }
 
-string ofxPrecisionText::defineFont() {
+string ofxPrecisionText::defineFont(float fSize) {
     
     /*-- Loads TTF to cache and returns font cache key --*/
 
     if (fontIndex == 0) return "Hershey";
     string fontName = fontList[fontIndex];
-    string fontKey = fontName + ofToString( fontSize );
+    string fontKey = fontName + ofToString( fSize );
     auto it = fontCache.find(fontKey);
     if (it == fontCache.end()) {
         ofTrueTypeFont font;
@@ -95,39 +92,14 @@ vector<int> generateIndexes(string text, string find) {
     return indexes;
 }
 
-vector<ofxPrecisionTextRegex> ofxPrecisionText::getMatchedStrings (string subject, string reg ){
-    
-    vector<ofxPrecisionTextRegex> results;
-    try {
-        regex re(reg);
-        sregex_iterator next(subject.begin(), subject.end(), re);
-        sregex_iterator end;
-        while (next != end) {
-            smatch match = *next;
-            ofxPrecisionTextRegex m;
-            m.start = next->position();
-            m.size = std::distance(next, end);
-            m.match = next->str();
-            results.push_back(m);
-            next++;
-        }
-    } catch (std::regex_error& e) {
-        // Syntax error in the regular expression
-        ofLogError("Error in regular expression");
-    }
-    return results;
-}
 
 vector<int> ofxPrecisionText::regexReplace(string & text, string regex) {
     
     vector<int> indexes;
     int iter = 0;
     for (auto & reg : getMatchedStrings(text, regex)) {
-//        ofLog() << "Regex inner: " << reg.match << " " << reg.start << reg.size;
         int start = reg.start;
-//        text.replace(start, reg.match.size(), "");
         indexes.push_back(start);
-//        iter += reg.match.size();
     }
     
     return indexes;
@@ -147,7 +119,7 @@ ofRectangle ofxPrecisionText::getBounds(string text, float fSize, float x, float
         hershey.setScale( (1.0 / 31.0) * fSize );
         b = hershey.getBounds(text, x, y);
     } else {
-        string fontKey = defineFont();
+        string fontKey = defineFont(fSize);
         b = fontCache[fontKey].getStringBoundingBox(text, x, y);
         b.y = y + (fontSize * 1);
     }
@@ -167,7 +139,7 @@ void ofxPrecisionText::drawString(string text, float fSize, float xx, float yy) 
         hershey.setScale( ( 1.0 / 31.0 ) * fSize );
         hershey.draw(text, xx, yy + getBounds(text, fSize, 0,0).height);
     } else {
-        string fontKey = defineFont();
+        string fontKey = defineFont(fSize);
         fontCache[fontKey].drawString(text, xx, yy );
     }
 }
@@ -215,30 +187,77 @@ bool ofxPrecisionText::hasLink(vector<ofxPrecisionTextHyperlink> links, int i, o
 }
 
 void ofxPrecisionText::setFontSize(float fSize) {
-    fontSize = fSize;
+    fontSize = fSize * dpi;
 }
+
+vector<ofxPrecisionTextRegex> ofxPrecisionText::getMatchedStrings (string subject, string reg ){
+    
+    vector<ofxPrecisionTextRegex> results;
+    try {
+        regex re(reg);
+        sregex_iterator next(subject.begin(), subject.end(), re);
+        sregex_iterator end;
+        while (next != end) {
+            smatch match = *next;
+            ofxPrecisionTextRegex m;
+            m.start = next->position();
+            m.size = std::distance(next, end);
+            m.match = next->str();
+//            ofLog() << m.match;
+            results.push_back(m);
+            next++;
+        }
+    } catch (std::regex_error& e) {
+        // Syntax error in the regular expression
+        ofLogError("Error in regular expression");
+    }
+    return results;
+}
+
 ofxPrecisionTextStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundingBox, bool dontDraw, bool isPoint) {
 
     
     /*-- Draw text string with line breaks and formatting --*/
     
-    string fontKey = defineFont();
-    ofxPrecisionTextStructure structure = parsetext(text, false);
+    string fontKey = defineFont(fontSize);
+    
+    
+//    using std::regex;
+//    using std::sregex_iterator;
+//    using std::string;
+//    
+//    regex reg1("\\*\\*(.*)\\*\\*", std::regex_constants::icase);
+//    string target = text;
+//    sregex_iterator it(target.begin(), target.end(), reg1);
+//    sregex_iterator reg_end;
+//    for (; it != reg_end; ++it) {
+//        std::cout << "Substring found: ";
+//        std::cout << it->str() << ", Position: ";
+//        std::cout << it->position() << std::endl;
+//    }
+    
+    
+//    std::regex r("\\*\\*(.*)\\*\\*");
+//    for(std::sregex_iterator i = std::sregex_iterator(text.begin(), text.end(), r);
+//        i != std::sregex_iterator();
+//        ++i ) {
+//        ofLog() << "HUH" << i;
+//        std::smatch m = *i;
+//        std::cout << " at position " << m.position() << " " << m.str().length() << '\n';
+//        for (int ii = 0; ii < m.size(); ii++) {
+//            ofLog() << "HEY" << m[ii];
+//        }
+//    }
+//
+//    for (auto & m : getMatchedStrings(text, "[<>a-zA-Z0-9 ]*\\*([a-zA-Z0-9 ]*)\\*[<>a-zA-Z0-9 ]*") ) {
+//
+//    }
+    
+
+    
+    ofxPrecisionTextStructure structure = parseMarkdown(text, false);
     text = structure.text;
     
-//    for (auto & b : structure.bold) {
-//
-//        ofLog() << "Bold: " << b;
-//    }
-//    for (auto & b : structure.italic) {
-//
-//        ofLog() << "Italic: " << b;
-//    }
-//    for (auto & b : structure.h1) {
-//
-//        ofLog() << "H1: " << b;
-//    }
-//
     
     vector<ofxPrecisionTextChar> chars;
     string outputString = "";
@@ -273,7 +292,7 @@ ofxPrecisionTextStructure ofxPrecisionText::drawFbo(string text, ofRectangle bou
         if (isH2) ch.isHeading += 2;
         if (isH3) ch.isHeading += 3;
         if (ch.isHeading > 0) {
-            float extra = (fontSize * 3) - fontSize;
+            float extra = (fontSize * headingScale) - fontSize;
             extra /= (float)ch.isHeading;
             ch.fontSize += extra;
         }
@@ -411,7 +430,7 @@ ofxPrecisionTextStructure ofxPrecisionText::drawFbo(string text, ofRectangle bou
                 ofSetColor( (ch.isLink) ? linkColor : strokeColor);
                 hershey.setScale( (1.0 / 31.0) * ch.fontSize);
                 hershey.setColor( (ch.isLink) ? linkColor : strokeColor );
-                hershey.setStroke( (ch.isBold) ? ofClamp(hersheyStroke + 1, 0, 2) : hersheyStroke );
+                hershey.setStroke( (ch.isBold) ? ofClamp(hersheyStroke + (0.75 * dpi), 0, 2 * dpi) : hersheyStroke );
                 hershey.setItalic( ch.isItalic , 4 );
             
                 drawString(ch.letter, ch.fontSize, ch.bounds.x, ch.bounds.y);
@@ -455,8 +474,8 @@ void ofxPrecisionText::setLineHeight(float lHeight) {
 
 void ofxPrecisionText::setup(string fontLocation) {
     
-    
-    
+    dpi = ((ofAppGLFWWindow*)ofGetWindowPtr())->getPixelScreenCoordScale();
+
     /*-- Setup + optionally load a folder of TTFs --*/
 
     shouldRedraw = false;
@@ -475,10 +494,11 @@ void ofxPrecisionText::setup(string fontLocation) {
 #endif
     pixelAligned = false;
     cacheCharLimit = 200;
-    fontSize = 14;
+    setFontSize(14);
+    setStroke(1.2);
+    setHeadingScale(2);
     fontIndex = 0;
     letterSpacing = 0;
-    hersheyStroke = 1.2;
     lineHeight = 1;
     linkColor = ofColor(255,0,0);
     
@@ -526,8 +546,8 @@ void ofxPrecisionText::setColor(ofColor color) {
 }
 
 void ofxPrecisionText::setStroke(float stroke) {
-    hersheyStroke = stroke;
-    hershey.setStroke(stroke);
+    hersheyStroke = stroke * dpi;
+    hershey.setStroke(hersheyStroke);
 }
 ofxPrecisionTextStructure ofxPrecisionText::draw(string text, glm::vec3 originPoint, int horzAlign, int vertAlign) {
     ofPoint p(originPoint.x, originPoint.y);

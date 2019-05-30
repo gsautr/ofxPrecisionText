@@ -3,11 +3,17 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+    
+    
+    
+    screenDpi = ((ofAppGLFWWindow*)ofGetWindowPtr())->getPixelScreenCoordScale();
+    ofSetWindowShape(ofGetWidth() * screenDpi, ofGetHeight() * screenDpi);
+    
     text.setup();
     horizontalAlign = -1;
     verticalAlign = 0;
     fontSize = 14;
-    fontStroke = 1.4;
+    fontStroke = 1.2;
     fontIndex = 0;
     lineHeight = 1;
     ofLog::setAutoSpace(true);
@@ -25,10 +31,11 @@ void ofApp::draw(){
     
     ofBackground(10);
     
-    int w = ofGetWidth();
-    int h = ofGetHeight();
+    int w = ofGetWidth()/ screenDpi;
+    int h = ofGetHeight()/ screenDpi;
     int ww = w/2 - 250;
     int hh = h - 300;
+    
     
     ofRectangle A(w - ww - 100 - ww, 200, ww, hh);
     ofRectangle B(w - ww - 50, 200 + hh/2 + 25, ww, (hh/2 ) - 25);
@@ -36,13 +43,23 @@ void ofApp::draw(){
     ofRectangle D(50, 200, w - ww - ww - 200, hh/2);
     ofRectangle E(50, 200 + hh/2, w - ww - ww - 200, hh/2);
     
+    A.scale( ofPoint(screenDpi, screenDpi) );
+    B.scale( ofPoint(screenDpi, screenDpi) );
+    C.scale( ofPoint(screenDpi, screenDpi) );
+    D.scale( ofPoint(screenDpi, screenDpi) );
+    E.scale( ofPoint(screenDpi, screenDpi) );
+    A.setPosition( A.getPosition() * screenDpi );
+    B.setPosition( B.getPosition() * screenDpi );
+    C.setPosition( C.getPosition() * screenDpi );
+    D.setPosition( D.getPosition() * screenDpi );
+    E.setPosition( E.getPosition() * screenDpi );
+    
     
     ofSetColor(255);
     text.setColor(ofColor(255));
     text.setFont(fontIndex);
     text.setLineHeight(lineHeight);
     
-    ofSetLineWidth(fontStroke);
     text.setStroke(fontStroke);
     
     ofPoint point = B.getCenter();
@@ -59,8 +76,8 @@ void ofApp::draw(){
     ofNoFill();
     text.setFontSize(fontSize);
     
-    fboRects.push_back( text.draw("# of**Point**", ofPoint(B.x, 100), 1, 0) );
-    fboRects.push_back( text.draw("# of**Rectangle**", ofPoint(A.x, 100), 1, 0) );
+    fboRects.push_back( text.draw("# of**Point**", ofPoint(B.x, 100 * screenDpi), 1, 0) );
+    fboRects.push_back( text.draw("# of**Rectangle**", ofPoint(A.x, 100 * screenDpi), 1, 0) );
 
     fboRects.push_back( text.draw("Hello World", point, horizontalAlign , verticalAlign) );
     fboRects.push_back( text.draw("Hello World", C, horizontalAlign , verticalAlign) );
@@ -72,7 +89,7 @@ void ofApp::draw(){
     text.setStroke(1.2);
     text.setFont(0);
     
-    fboRects.push_back( text.draw("# ofx**PrecisionText**", ofPoint(D.x, 100), 1, 0) );
+    fboRects.push_back( text.draw("# ofx**PrecisionText**", ofPoint(D.x, 100 * screenDpi), 1, 0) );
     
     text.setLineHeight(2);
     

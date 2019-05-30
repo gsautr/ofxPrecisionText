@@ -1,7 +1,11 @@
 /*
- * parse_markdown.cpp
+ * ofxPrecisionText
+ * Gilbert Sinnott
+ * https://github.com/autr/ofxPrecisionText
  *
- *  Created on: 30 oct. 2014
+ * Adapted from:
+ *      URL: https://github.com/goldsborough/markdownpp
+ *      Date: 30 oct. 2014
  *      Author: cameron
  */
 
@@ -10,11 +14,17 @@
 #include <string>
 #include <regex>
 
-#include "parse_markdown.h"
+#include "parseMarkdown.h"
 #include "ofLog.h"
 #include "ofUtils.h"
 
 using namespace std;
+/**
+ * Bool
+ */
+bool need_paragraph = true;
+bool current_paragraph = false;
+bool current_list = false;
 
 /**
  * Regex
@@ -44,9 +54,27 @@ extern bool need_paragraph;
 extern bool current_paragraph;
 extern bool current_list;
 
-int str_replace( string &s, string &search, string &replace , smatch & match) {
+
+void generate(string &s, string &regex) {
     
-    int rmIter = 0;
+    std::regex r(regex);
+    for(std::sregex_iterator i = std::sregex_iterator(s.begin(), s.end(), r);
+        i != std::sregex_iterator();
+        ++i ) {
+        std::smatch m = *i;
+        std::cout << m.str() << " at position " << m.position() << " " << m.str().length() << '\n';
+        for (int ii = 0; ii < m.size(); ii++) {
+            ofLog() << "HEY" << m[ii];
+        }
+        
+    }
+}
+
+int parseRegex( string &s, string &search, string &replace , smatch & match, vector<ofxPrecisionTextRegex> & list,  int type) {
+    
+    int removedCounter = 0;
+    
+    ofLog() << "---";
     
     
     for( size_t pos = 0; ; pos += replace.length() )
@@ -55,54 +83,113 @@ int str_replace( string &s, string &search, string &replace , smatch & match) {
         if( pos == string::npos )
             break;
         
-        rmIter += (search.length() - replace.size());
+        
+        ofxPrecisionTextRegex r;
+        r.toBeReplaced = search;
+        r.originalStart = pos;
+        r.start = pos;
+        r.size = replace.length();
+        r.end = pos + replace.length();
+        r.match = replace;
+        r.type = type;
+        list.push_back(r);
+        
+        ofLog() << "Add" << pos << search.length() << search.length() - replace.size();
+        ofLog() << search;
+        
+        int off = search.length() - replace.size();
+        
+        for (auto & rr : list) {
+            if (r.start < rr.start) {
+                rr.start -= off;
+//                rr.end -= off;
+//                ofLog() << "Rem" << rr.start;
+            }
+            if (r.end < rr.end) {
+                rr.end -= off;
+//                ofLog() << "Rem" << rr.start;
+//                ofLog() << rr.toBeReplaced;
+            }
+        }
+        
         s.erase( pos, search.length() );
+        
+        removedCounter += (search.length() - replace.size());
+        string chaos = "";
+        for (int i = 0; i < search.length(); i++) chaos += "@";
+//        s.insert( pos, chaos );
         s.insert( pos, replace );
+
     }
-    return rmIter;
+    return removedCounter;
 }
 
-bool search_headers_style(string& stringToReturn, smatch& match);
 
-void verify_bold() {
+ofxPrecisionTextStructure parseMarkdown(string & source, bool asHtml) {
     
-}
-
-ofxPrecisionTextStructure parsetext(string & source, bool asHtml) {
+    
+    vector<ofxPrecisionTextRegex> list;
+    
     ofxPrecisionTextStructure output;
     output.inSize = source.size();
     output.outSize = 0;
     output.removed = 0;
+
+
+    /*-- Loop over lines --*/
+
     std::istringstream f(source);
     string line;
     string outText;
-    bool hadNl = ( source.back() == '\n' );
+    bool hadNl = ( source.back() == '\n' ); // did it have a newline?
+
     while (getline(f, line)) {
         line += '\n';
-        parseline(line, output, false);
+        parseLine(line, output, false, list);
     }
-    
+
+    /*-- Preserve new lines --*/
+
     if (!hadNl) {
         output.text = output.text.substr( 0 , output.text.size() - 1);
         output.outSize -= 1;
     }
     
+    /*-- Parse REGEX candidates to indexes --*/
+
+    for (auto & r : list) {
+        if (r.type == PRECISION_BOLD) {
+            output.bold.push_back(r.start);
+            output.bold.push_back(r.end);
+        }
+        if (r.type == PRECISION_LINK) {
+            output.link.push_back(r.start);
+            output.link.push_back(r.end);
+        }
+//        if (r.type == PRECISION_ITALIC) {
+//            output.italic.push_back(r.start);
+//            output.italic.push_back(r.end);
+//        }
+        if (r.type == PRECISION_H1) output.h1.push_back(r.start);
+    }
+    
+    /*-- Check parity of indexes and string lengths --*/
+    
     if ((output.text.size() != output.inSize - output.removed) || (output.text.size() != output.outSize)) {
         ofLogError("[ofxPrecisionText]") << "Mismatch in parsed markdown length";
     }
+
     return output;
 }
 
-void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
+void parseLine(string& text, ofxPrecisionTextStructure & output, bool asHtml, vector<ofxPrecisionTextRegex> & list) {
     
     
-    int rmv = 0;
+    int removedCounterForLine = 0;
+
     string stringToReturn = text;
-    
     string toReplace;
-    
     string search;
-    
     smatch match;
     
     if (stringToReturn.empty() && current_list) {
@@ -111,7 +198,7 @@ void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
     }
     
     if ((stringToReturn.empty() == false) && !(regex_search(stringToReturn, match, bold_regex) || regex_search(stringToReturn, match, italic_regex)
-                                               || regex_search(stringToReturn, match, url_regex) || search_headers_style(stringToReturn, match)
+                                               || regex_search(stringToReturn, match, url_regex) || searchHeadersStyle(stringToReturn, match)
                                                || regex_search(stringToReturn, match, img_regex)
                                                || regex_search(stringToReturn, match, list_regex))) {
         if (current_list) {
@@ -135,8 +222,9 @@ void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
         current_paragraph = false;
     }
     
+    
     while (regex_search(stringToReturn, match, bold_regex) || regex_search(stringToReturn, match, italic_regex)
-           || regex_search(stringToReturn, match, url_regex) || search_headers_style(stringToReturn, match)
+           || regex_search(stringToReturn, match, url_regex) || searchHeadersStyle(stringToReturn, match)
            || regex_search(stringToReturn, match, img_regex)
            || regex_search(stringToReturn, match, list_regex)) {
         if (regex_search(stringToReturn, match, bold_regex)) {
@@ -155,13 +243,7 @@ void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
             search += "**";
             search += match[1];
             search += "**";
-            rmv += str_replace(stringToReturn, search, toReplace, match);
-            int a = match.position() + output.outSize;
-            int b = match.position() + toReplace.size() + output.outSize;
-            if (a != b) {
-                output.bold.push_back(a);
-                output.bold.push_back(b);
-            }
+            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_BOLD);
         }
         toReplace = "";
         search = "";
@@ -181,13 +263,7 @@ void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
             search += "*";
             search += match[1];
             search += "*";
-            rmv += str_replace(stringToReturn, search, toReplace, match);
-            int a = match.position() + output.outSize;
-            int b = match.position() + toReplace.size() + output.outSize;
-            if (a != b) {
-                output.italic.push_back(a);
-                output.italic.push_back(b);
-            }
+//            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_ITALIC);
         }
         toReplace = "";
         search = "";
@@ -201,7 +277,7 @@ void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
             if (asHtml) toReplace += "</li>";
             search += "*  ";
             search += match[1];
-            rmv += str_replace(stringToReturn, search, toReplace, match);
+            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list);
         }
         toReplace = "";
         search = "";
@@ -222,7 +298,7 @@ void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
             search += "(";
             search += match[2];
             search += ")";
-            rmv += str_replace(stringToReturn, search, toReplace, match);
+            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list);
         }
         toReplace = "";
         search = "";
@@ -248,16 +324,11 @@ void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
             search += "(";
             search += match[2];
             search += ")";
-            rmv += str_replace(stringToReturn, search, toReplace, match);
-            ofxPrecisionTextHyperlink link;
-            link.start = match.position() + output.outSize;
-            link.end = match.position() + toReplace.size() + output.outSize;
-            link.url = url;
-            output.links.push_back(link);
+            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_LINK);
         }
         toReplace = "";
         search = "";
-        if (search_headers_style(stringToReturn, match)) {
+        if (searchHeadersStyle(stringToReturn, match)) {
             if (current_list) {
                 current_list = false;
                 stringToReturn += "</ul>";
@@ -268,9 +339,7 @@ void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
                 if (asHtml) toReplace += "</h3>";
                 search += "### ";
                 search += match[1];
-                rmv += str_replace(stringToReturn, search, toReplace, match);
-                output.h3.push_back(match.position() + output.outSize);
-                output.h3.push_back(match.position() + toReplace.size() + output.outSize);
+                removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_H3);
             }
             if (regex_search(stringToReturn, match, h2_regex)) {
                 if (asHtml) toReplace += "<h2>";
@@ -278,9 +347,7 @@ void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
                 if (asHtml) toReplace += "</h2>";
                 search += "## ";
                 search += match[1];
-                rmv += str_replace(stringToReturn, search, toReplace, match);
-                output.h2.push_back(match.position() + output.outSize);
-                output.h2.push_back(match.position() + toReplace.size() + output.outSize);
+                removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_H@);
             }
             if (regex_search(stringToReturn, match, h1_regex)) {
                 if (asHtml) toReplace += "<h1>";
@@ -288,24 +355,24 @@ void parseline(string& text, ofxPrecisionTextStructure & output, bool asHtml) {
                 if (asHtml) toReplace += "</h1>";
                 search += "# ";
                 search += match[1];
-                rmv += str_replace(stringToReturn, search, toReplace, match);
-                output.h1.push_back(match.position() + output.outSize);
-                output.h1.push_back(match.position() + toReplace.size() + output.outSize);
+                removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_H1);
             }
         }
     }
+
+    /*-- Funky stuff to check parity of indexes and string lentghs --*/
     
     
     output.outSize += text.size();
-    output.outSize -= rmv;
-    output.removed += rmv;
+    output.outSize -= removedCounterForLine;
+    output.removed += removedCounterForLine;
     output.text += stringToReturn;
     
     return output;
     
 }
 
-bool search_headers_style(string& stringToReturn, smatch& match) {
+bool searchHeadersStyle(string& stringToReturn, smatch& match) {
     
     if (regex_search(stringToReturn, match, h1_regex) || regex_search(stringToReturn, match, h2_regex)
         || regex_search(stringToReturn, match, h3_regex))
