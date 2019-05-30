@@ -163,8 +163,13 @@ ofxPrecisionTextStructure parseMarkdown(string & source, bool asHtml) {
             output.bold.push_back(r.end);
         }
         if (r.type == PRECISION_LINK) {
-            output.link.push_back(r.start);
-            output.link.push_back(r.end);
+            
+            ofxPrecisionTextHyperlink link;
+            link.start = r.start;
+            link.end = r.end;
+//            link.url = url;
+            output.links.push_back(link);
+            
         }
 //        if (r.type == PRECISION_ITALIC) {
 //            output.italic.push_back(r.start);
