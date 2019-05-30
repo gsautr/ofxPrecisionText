@@ -4,7 +4,7 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     text.setup();
-    horizontalAlign = 0;
+    horizontalAlign = -1;
     verticalAlign = 0;
     fontSize = 14;
     fontStroke = 1.4;
@@ -57,21 +57,22 @@ void ofApp::draw(){
     ofDrawLine(B.getLeft(), B.getCenter().y, B.getRight(), B.getCenter().y);
     ofDrawLine(B.getCenter().x, B.getTop(), B.getCenter().x, B.getBottom());
     ofNoFill();
+    text.setFontSize(fontSize);
     
-    fboRects.push_back( text.draw("of**Point**", ofPoint(B.x, 100), 26, 1, 0) );
-    
-    fboRects.push_back( text.draw("Hello World", point, fontSize, horizontalAlign , verticalAlign) );
-    fboRects.push_back( text.draw("Hello World", C, fontSize, horizontalAlign , verticalAlign) );
-    
-    fboRects.push_back( text.draw("of**Rectangle**", ofPoint(A.x, 100), 26, 1, 0) );
-    
-    fboRects.push_back( text.draw("Nulla _facilisis_ euismod risus, eget **elementum** tortor pulvinar vel. Donec at ultrices mi.\n\n\n\n # Curabitur \nfringilla euismod luctus. Integer sem est, euismod cursus justo in, _placerat_ lacinia magna. [Suspendisse](ggogle.com) purus enim, **posuere**\nvitae lobortis eget, convallis eu tortor. Class aptent taciti sociosqu ad litora torquent per [conubia](hello) nostra, per [inceptos](fsdfds.com) himenaeos.", A, fontSize, horizontalAlign , verticalAlign) );
+    fboRects.push_back( text.draw("# of**Point**", ofPoint(B.x, 100), 1, 0) );
+    fboRects.push_back( text.draw("# of**Rectangle**", ofPoint(A.x, 100), 1, 0) );
+
+    fboRects.push_back( text.draw("Hello World", point, horizontalAlign , verticalAlign) );
+    fboRects.push_back( text.draw("Hello World", C, horizontalAlign , verticalAlign) );
+
+
+    fboRects.push_back( text.draw("Nulla _facilisis_ euismod risus, eget **elementum** tortor pulvinar vel. Donec at ultrices mi.\n# Curabitur\nfringilla euismod luctus. Integer sem est, euismod cursus justo in, *placerat* lacinia magna. [Suspendisse](ggogle.com) purus enim, **posuere**\nvitae lobortis eget, convallis eu tortor. \n# Class\naptent taciti sociosqu ad litora torquent per [conubia](hello) nostra, per [inceptos](fsdfds.com) himenaeos.", A, horizontalAlign , verticalAlign) );
     
     
     text.setStroke(1.2);
     text.setFont(0);
     
-    fboRects.push_back( text.draw("ofx**PrecisionText**", ofPoint(D.x, 100), 26, 1, 0) );
+    fboRects.push_back( text.draw("# ofx**PrecisionText**", ofPoint(D.x, 100), 1, 0) );
     
     text.setLineHeight(2);
     
@@ -93,9 +94,9 @@ void ofApp::draw(){
     outputB += "\nE/R: -/+ **FBO Samples**";
     outputB += "\nArrow Keys: **Vert/Horz Align**";
     
-    text.draw(outputA, D, 12, -1, 1);
+    text.draw(outputA, D, -1, 1);
     text.setColor(ofColor(0,255,255));
-    text.draw(outputB, E, 12, -1, 1);
+    text.draw(outputB, E, -1, 1);
     
     ofNoFill();
     ofSetColor(0,255,255, 50);
@@ -139,8 +140,8 @@ void ofApp::keyPressed(int key){
     if (key == OF_KEY_DOWN && verticalAlign > -1) verticalAlign -= 1;
     if (key == OF_KEY_UP && verticalAlign < 1) verticalAlign += 1;
     
-    if (key == 'q') fontSize -= 0.1;
-    if (key == 'w') fontSize += 0.1;
+    if (key == 'q') fontSize -= 0.5;
+    if (key == 'w') fontSize += 0.5;
     key -= 49;
     if (key >= 0 && key <= 9) fontIndex = key;
     

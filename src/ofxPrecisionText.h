@@ -1,6 +1,5 @@
 #pragma once
 #include "ofxHersheyFont.h"
-#define STRINGIFY(A) string("#version 150\n")+#A
 
 struct ofxPrecisionTextHyperlink {
     int start;
@@ -15,19 +14,27 @@ struct ofxPrecisionTextChar {
     bool isBold;
     bool isItalic;
     bool isLink;
+    int isHeading;
     bool isNewline;
     ofRectangle bounds;
 };
 
 struct ofxPrecisionTextStructure {
-    vector<int> spaceIndexes;
-    vector<int> lineBreakIndexes;
-    vector<int> boldIndexes;
-    vector<int> italicIndexes;
-    vector<int> newLines;
+
+    vector<int> h1;
+    vector<int> h2;
+    vector<int> h3;
+    vector<int> italic;
+    vector<int> bold;
+    vector<ofxPrecisionTextHyperlink> links;
+    
+    string text;
+    int inSize;
+    int outSize;
+    int removed;
+    
     ofRectangle bounds;
     vector<ofxPrecisionTextChar> chars;
-    vector<ofxPrecisionTextHyperlink> hyperLinks;
 };
 
 struct ofxPrecisionTextRegex {
@@ -35,6 +42,9 @@ struct ofxPrecisionTextRegex {
     int size;
     string match;
 };
+
+
+#include "parse_markdown.h"
 
 class ofxPrecisionText {
 private:
@@ -52,21 +62,7 @@ private:
     ofxHersheyFont hershey;
     ofFbo fbo;
     
-    bool allocateFbo(string fboKey, string text, ofRectangle boundingBox) {
-        
-        auto it = fboCache.find(fboKey);
-        if (it == fboCache.end()) {
-            ofFbo * fbo = new ofFbo();
-            structCache[fboKey] = drawFbo(text, boundingBox, true);;
-            fbo->allocate(structCache[fboKey].bounds.width, structCache[fboKey].bounds.height, fboType, numSamples);
-            samplesChanged = false;
-            ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << numSamples << " samples, " << structCache[fboKey].bounds.width << " x " << structCache[fboKey].bounds.height;
-            fboCache[fboKey] = fbo;
-            return true;
-        } else {
-            return false;
-        }
-    }
+    bool allocateFbo(string fboKey, string text, ofRectangle boundingBox, bool isPoint);
     
     vector<int> findInternalIndices(string t, int start, vector<int> search);
     bool shouldRedraw;
@@ -81,13 +77,13 @@ private:
     
     string defineFont(); /*-- Loads TTF to cache and returns font cache key --*/
 
-    ofRectangle getBounds(string text, float x, float y); /*-- Get bounds for single text string --*/
+    ofRectangle getBounds(string text, float fSize, float x, float y); /*-- Get bounds for single text string --*/
     bool hasLink(vector<ofxPrecisionTextHyperlink> links, int i, ofxPrecisionTextHyperlink & link);
     bool hasIndex(vector<int> indexes, int i);
-    void drawString(string fontKey, string text, float xx, float yy);
+    void drawString(string text, float fSize, float xx, float yy);
     
     
-    ofxPrecisionTextStructure drawFbo(string text, ofRectangle boundingBox, bool dontDraw = false, bool useHorizontal = false, bool isPoint = false); /*-- Draw text string with line breaks and formatting --*/
+    ofxPrecisionTextStructure drawFbo(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false); /*-- Draw text string with line breaks and formatting --*/
     
 public:
     vector<string> fontList;
@@ -115,10 +111,12 @@ public:
     void setColor(ofColor color);
     
     void setStroke(float stroke);
+    
+    void setFontSize(float fSize);
 
-    ofxPrecisionTextStructure draw(string text, glm::vec3 originPoint, float fSize, int horzAlign = -1, int vertAlign = 0);
-    ofxPrecisionTextStructure draw(string text, ofPoint originPoint, float fSize, int horzAlign = -1, int vertAlign = 0);
-    ofxPrecisionTextStructure draw(string text, ofRectangle boundingBox, float fSize, int horzAlign = -1, int vertAlign = 0, bool isPoint = false);
+    ofxPrecisionTextStructure draw(string text, glm::vec3 originPoint, int horzAlign = -1, int vertAlign = 0);
+    ofxPrecisionTextStructure draw(string text, ofPoint originPoint, int horzAlign = -1, int vertAlign = 0);
+    ofxPrecisionTextStructure draw(string text, ofRectangle boundingBox, int horzAlign = -1, int vertAlign = 0, bool isPoint = false);
     
     
     

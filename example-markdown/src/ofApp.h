@@ -26,5 +26,4 @@ class ofApp : public ofBaseApp{
         ofxPrecisionTextStructure structure;
     int pressed, dragged;
     int getNearestCharacter(int x, int y);
-    
 };
