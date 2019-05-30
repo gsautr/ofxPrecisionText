@@ -7,7 +7,7 @@ string ofxPrecisionText::getFboKey(string text) {
 
     /*-- Get unique hash for FBO cache --*/
 
-    string key = fontList[fontIndex] + ofToString(fontSize) + ofToString(strokeColor.r) + ofToString(strokeColor.g) + ofToString(strokeColor.b) + ofToString(strokeColor.a) + ofToString(numSamples) + text + ofToString(horizontalAlign) + ofToString(lineHeight);
+    string key = fontList[fontIndex] + ofToString(fontSize) + ofToString(strokeColor.r) + ofToString(strokeColor.g) + ofToString(strokeColor.b) + ofToString(strokeColor.a) + ofToString(numSamples) + text + ofToString(horizontalAlign) + ofToString(lineHeight) + ofToString(pixelAligned) + ofToString(letterSpacing);
     if (fontIndex == 0 ) key += ofToString(hersheyStroke);
     return key;
 }
@@ -30,17 +30,20 @@ string ofxPrecisionText::defineFont() {
     return fontKey;
 }
 
-ofRectangle ofxPrecisionText::getBounds(string text, int x, int y) {
+ofRectangle ofxPrecisionText::getBounds(string text, float x, float y) {
 
     /*-- Get bounds for single text string --*/
+
+    if (text == " ") text = "_";
 
     ofRectangle b;
     
     if (fontIndex == 0) {
-        b = hershey.getBounds(text, x, y);
+        b = hershey.getBounds(text, x, y + (fontSize * 0.32));
     } else {
         string fontKey = defineFont();
         b = fontCache[fontKey].getStringBoundingBox(text, x, y);
+        b.y = y + (fontSize * 1);
     }
     
     return b;
@@ -54,7 +57,6 @@ vector<int> replaceAndGenerateIndexes(string & text, string find) {
     for (auto & split : ofSplitString(text, find)) {
         i += split.size();
         indexes.push_back(i);
-        ofLog() << "SPLIT: " << split;
     }
     
     string t = text;
@@ -66,7 +68,6 @@ vector<int> replaceAndGenerateIndexes(string & text, string find) {
         t.replace(pos, find.size(), "");
         // Get the next occurrence from the current position
         pos = t.find(find, pos);
-        ofLog() << t << " " << pos;
     }
     text = t;
     
@@ -94,7 +95,6 @@ vector<ofxPrecisionTextRegex> ofxPrecisionText::getMatchedStrings (string subjec
         regex re(reg);
         sregex_iterator next(subject.begin(), subject.end(), re);
         sregex_iterator end;
-        
         while (next != end) {
             smatch match = *next;
             ofxPrecisionTextRegex m;
@@ -116,181 +116,311 @@ vector<int> ofxPrecisionText::regexReplace(string & text, string regex) {
     vector<int> indexes;
     int iter = 0;
     for (auto & reg : getMatchedStrings(text, regex)) {
-        ofLog() << "Regex inner: " << reg.match << " " << reg.start;
-        text.replace(reg.start - iter, reg.match.size(), "");
-        indexes.push_back(iter);
-        iter += reg.match.size();
+//        ofLog() << "Regex inner: " << reg.match << " " << reg.start << reg.size;
+        int start = reg.start;
+//        text.replace(start, reg.match.size(), "");
+        indexes.push_back(start);
+//        iter += reg.match.size();
     }
     
     return indexes;
 }
 
-void ofxPrecisionText::formatParagraphs(string & text, ofRectangle & boundingBox) {
-    
-    /*-- Format a text string into paragraphs and line breaks, and update bounding box to reflect this --*/
 
+void ofxPrecisionText::drawString(string fontKey, string text, float xx, float yy) {
+    
+    if (pixelAligned) {
+        xx = (int)xx;
+        yy = (int)yy;
+    }
+    
+    float spc = ((1.0 - lineHeight) / 2) * fontSize;
+    
+    if (fontIndex == 0) {
+        hershey.draw(text, xx, yy + (fontSize * 0.68) - spc);
+    } else {
+        fontCache[fontKey].drawString(text, xx, yy - spc);
+    }
+}
+
+bool compareInts(int a, int b) {
+    return a < b;
+}
+vector<string> ofxPrecisionText::splitString(int fromChar, string text, vector<int> indices) {
+    indices.push_back(fromChar);
+    indices.push_back(fromChar + text.size());
+    ofSort(indices, compareInts);
+    vector<string> output;
+    string t = text;
+    for (int i = 0; i < indices.size() - 1; i++ ) {
+        int iA = indices[i] - fromChar;
+        int iB = indices[i+1] - fromChar - iA;
+        if (iA < text.size()) {
+            string sub = t.substr(iA, iB);
+            output.push_back( sub );
+        }
+    }
+    return output;
+    
+}
+
+vector<int> ofxPrecisionText::findInternalIndices(string t, int start, vector<int> search) {
+    
+    vector<int> output;
+    int end = start + t.size();
+    for (auto & i : search) {
+        if ((i >= start)&&(i <= end)) output.push_back(i);
+        
+    }
+    return output;
+}
+
+bool ofxPrecisionText::hasLink(vector<ofxPrecisionTextHyperlink> links, int i, ofxPrecisionTextHyperlink & link) {
+    for (auto & l : links) {
+        if (i >= l.start && i < l.end) {
+            link = l;
+            return true;
+        }
+    }
+    return false;
+}
+ofxPrecisionTextStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundingBox, bool dontDraw, bool useHorizontal, bool isPoint) {
+
+    
+    /*-- Draw text string with line breaks and formatting --*/
+    
+    string fontKey = defineFont();
     
     ofxPrecisionTextStructure structure;
     
-    int iter = 0;
+    /*-- Parse hyperlinks --*/
+    
+    int iPos = 0;
     for (auto & reg : getMatchedStrings(text, "\\[\\w+?\\](\\([-:/.[:alnum:]]+?\\))")) {
-        ofLog() << "Links " << reg.match << " " << reg.start;
         
         int mid = reg.match.find("](");
         string url = reg.match.substr(mid + 2, reg.match.size() - mid);
         string title = reg.match.substr(1, mid - 1);
-
-        text.replace(reg.start - iter, reg.match.size(),  title);
+        
+        text.replace(reg.start - iPos, reg.match.size(),  title);
         
         ofxPrecisionTextHyperlink link;
-        link.start = reg.start;
-        link.end = reg.start + reg.match.size();
+        link.start = reg.start - iPos;
+        link.end = reg.start + title.size() - iPos;
         link.url = url;
         structure.hyperLinks.push_back(link);
         
-        iter += reg.match.size() - title.size();
+        iPos += reg.match.size() - title.size();
     }
-//    structure.boldIndexes = regexReplace(text, "[**][\w\W]*[**]");
-//    structure.italicIndexes = regexReplace(text, "[*][\w\W]*[*]");
-    structure.newLines = regexReplace(text, "\n");
+    
+    /*-- Parse REGEX formatting --*/
+    
+    structure.boldIndexes = regexReplace(text, "[**][\w\W]*[**]");
+    structure.italicIndexes = regexReplace(text, "\_(.*?)\_");
+    
+//    for (auto & i : regexReplace(text, "\# (.*)\n")) {
+//        ofLog() << "REG" << i;
+//    }
+//    for (auto & i : structure.italicIndexes) {
+//        ofLog() << "Italic" << i << text[i];
+//    }
     
     
+    vector<ofxPrecisionTextChar> chars;
+    string outputString = "";
     
-    int totalHeight = 0;
-    int totalWidth = 0;
+    /* -- Generate chars -- */
     
-    int iChars = 0;
-    int iWidth = 0;
-    int iX = 0;
-    int iY = 0;
+    bool isBold = false;
+    bool isItalic = false;
     
-    vector<ofRectangle> charRects;
-    
-    string fontKey = defineFont();
-    
-    int iterateChars = 0;
-    
-    
-    for (auto & paragraph : ofSplitString(text, "\n")) {
+    for (int i = 0; i < text.size(); i++) {
         
-        /*-- Produces total width + height, and line breaks for a paragraph string --*/
-        
-        int iterateWidth = 0;
-        
-        totalHeight += (int)(fontSize * lineHeight);
-        
-        for (auto & word : ofSplitString(paragraph, " ")) {
-            
-            ofRectangle b = getBounds(word + "_", 0, 0);
-            
-            iterateWidth += b.width;
-            if (iterateWidth > totalWidth) {
-                totalWidth = iterateWidth;
-            }
-            if (iterateWidth > boundingBox.width) {
-                iterateWidth = b.width;
-                totalHeight += (int)(fontSize * lineHeight);
-                text.insert(iterateChars, "\n");
-            }
-            iterateChars += word.size() + 1;
+        if (hasIndex(structure.boldIndexes, i)) {
+            isBold = !isBold;
+            i +=2;
         }
+        if (hasIndex(structure.italicIndexes, i)) {
+            isItalic = !isItalic;
+            i +=1;
+        }
+        
+        ofxPrecisionTextChar ch;
+        ch.fontSize = fontSize;
+        ch.isBold = false;
+        ch.isItalic =  false;
+        ch.isLink = false;
+        ch.isNewline = false;
+        ch.isBold = isBold;
+        ch.isItalic = isItalic;
+        
+        ofxPrecisionTextHyperlink link;
+        if (hasLink(structure.hyperLinks, i, link)) {
+            ch.isLink = true;
+        }
+        
+        
+        hershey.setScale( (1.0 / 31.0) * ch.fontSize );
+        string l = ofToString(text[i]);
+        ch.letter = l;
+        ch.bounds = getBounds(l, 0,0);
+        chars.push_back(ch);
+        outputString += l;
+        
     }
-    
-    
-    
-    
-    
-    boundingBox.width = totalWidth;
-    boundingBox.height = totalHeight;
-    boundingBox.height += (fontIndex != 0) ? (fontSize * 0.25) + 1 : fontSize * 0.5;
-    
-    structure.boundingBox = boundingBox;
-    
-}
-
-void ofxPrecisionText::drawString(string fontKey, string text, int xx, int yy) {
-    
-    ofSetColor(strokeColor);
-    hershey.setStroke( (isBold) ? hersheyStroke + 1 : hersheyStroke );
-    
-    if (fontIndex == 0) {
-        hershey.draw(text, xx, yy + (fontSize * 0.25));
-    } else {
-        fontCache[fontKey].drawString(text, xx, yy);
-    }
-}
-
-ofRectangle ofxPrecisionText::drawFbo(string text, ofRectangle boundingBox) {
-
-    isBold = false;
-    isItalic = false;
-    isHyperlink = false;
-    
-    /*-- Draw text string with line breaks and formatting --*/
-    
-    ofLogNotice("[ofxPrecisionText]") << "Drawing fbo, " << boundingBox.width << "x" << boundingBox.height;
-    
-    int initialWidth = getBounds(text, 0, 0).width;
-    int initialHeight = getBounds("ITPBgyq", 0, 0).height;
-    int descenderHeight = (fontIndex != 0) ? initialHeight * 1.75 : initialHeight + 1;
-    
-    ofRectangle b = boundingBox;
-    ofRectangle fboBox = boundingBox;
-    
-    
-    ofFill();
-    ofSetColor(strokeColor);
-    string fontKey = defineFont();
-    
-    formatParagraphs(text, fboBox);
     
     int linePix = (int)(fontSize * lineHeight);
+    float iX = 0;
+    float iY = 0;
+    float maxWidth = 0;
+    int iChars = 0;
+    bool nl = false;
     
-    int iLine = 0;
-    int iterChars = 0;
+    structure.newLines.push_back(0);
     
-    vector<ofRectangle> charRects;
+    vector<int> spaces = regexReplace(outputString, "[\n# $&:\n\t]");
+    vector<string> words = splitString(0, outputString, spaces);
     
-    
-    
-    
-    for (auto & line : ofSplitString(text, "\n")) {
+    for (auto & w : words) {
         
-        /*-- Define horizontal & vertical positioning --*/
-        
-        int xx = 0;
-        int yy = (linePix * iLine) + descenderHeight;
-        ofRectangle rect = getBounds(line, 0, yy);
-        if (horizontalAlign == 0) xx = (fboBox.width - rect.width) /2;
-        if (horizontalAlign == 1) xx = (fboBox.width - rect.width) ;
-        
-        
-        int iterX = xx;
-        
-        for ( int i = 0; i < line.size() ; i++) {
-            string letter = line.substr(i, 1);
-            charRects.push_back( getBounds( letter, iterX, yy) );
-            drawString(fontKey, letter, charRects.back().x, charRects.back().y);
-            iterX += charRects.back().width;
+        int ww = 0;
+        int xx = iX;
+        int i = 0;
+        for (auto & l : w) {
+            
+            ofxPrecisionTextChar & ch = chars[iChars];
+            ch.bounds = getBounds(ch.letter, iX, iY);
+            if (ch.letter == "\n") {
+                iY += linePix;
+                iX = 0;
+            } else {
+                iX += ch.bounds.width + letterSpacing;
+                ww += ch.bounds.width + letterSpacing;
+            }
+            if (iX > maxWidth) maxWidth = iX;
+            iChars += 1;
+            i += 1;
         }
         
-//        for (auto & piece : ofSplitString(line, "**")) {
-        
-//            for (auto & pieceItal : ofSplitString(boldPiece, "))
-//            drawString(fontKey, piece, iterBoldWidth, yy );
-//            iterBoldWidth += getBounds(piece, 0, 0).width;
-//            if (piece != ofSplitString(line, "**").back() ) isBold = !isBold;
-//        }
-        
-        
-        
-        iLine  += 1;
-        
+        if (iX > boundingBox.width) {
+            
+            /*-- Hack to go back and offset last chars --*/
+            
+            for (int i = iChars - w.size(); i < iChars; i++) {
+                ofxPrecisionTextChar & ch = chars[i];
+                ch.bounds.x -= xx + getBounds("_", 0, 0).width + letterSpacing;
+                ch.bounds.y += linePix;
+            }
+            
+            /*-- Iterate height and width --*/
+            
+            iY += linePix;
+            iX = ww;
+            maxWidth = boundingBox.width;
+            
+            
+        }
         
     }
     
     
-    return fboBox;
+    
+    /*--- Hacky horizontal  --*/
+    
+    if (horizontalAlign != -1 && useHorizontal) {
+    
+        float lastY = chars[0].bounds.y;
+        int iLine = 0;
+        for (int i = 0; i < chars.size(); i++) {
+            ofxPrecisionTextChar & ch = chars[i];
+            
+                if (ch.bounds.y != lastY || i+1 == chars.size()) {
+                    float tt = maxWidth;
+                    string ss ="";
+                    for (int ii = iLine; ii < i; ii++) {
+                        if (chars[ii].letter[0] != '\n') {
+                            tt  -= chars[ii].bounds.width + letterSpacing;
+                            ss += chars[ii].letter;
+                        }
+                    }
+                    
+                    tt -= letterSpacing;
+                    
+                    ss = "";
+                    
+                    if (horizontalAlign == 0) tt /= 2;
+                    
+                    for (int ii = iLine; ii <= i; ii++) {
+                        ofxPrecisionTextChar & cc = chars[ii];
+                        if ( ii == iLine) {
+                            cc.bounds.x = chars[ii+1].bounds.x - cc.bounds.width;
+                        }
+                        ss += cc.letter;
+                            cc.bounds.x += tt;
+                    }
+                    
+                    iLine = i;
+                }
+            
+                lastY = ch.bounds.y;
+            
+        }
+    }
+    
+    if (!dontDraw) {
+    
+        for (auto & ch : chars) {
+            
+            if ( int(ch.letter[0]) != 10 && int(ch.letter[0]) != 0 ) {
+                
+                ofFill();
+                ofSetColor( (ch.isLink) ? linkColor : strokeColor);
+                hershey.setColor( (ch.isLink) ? linkColor : strokeColor );
+                hershey.setStroke( (ch.isBold) ? ofClamp(hersheyStroke + 1, 0, 2) : hersheyStroke );
+                hershey.setItalic( ch.isItalic , 4 );
+            
+                drawString(fontKey, ch.letter, ch.bounds.x, ch.bounds.y);
+                ofNoFill();
+//                ofDrawRectangle(ch.bounds);
+            }
+        }
+    }
+    
+    /*-- Update bounding box structure for FBO --*/
+    
+    if (isPoint) {
+        ofLog() << "POINT:" << text;
+        ofLog() << maxWidth << iY;
+        maxWidth = 400;
+    }
+    
+    structure.bounds.width = maxWidth;
+    float descender = fontSize * 0.25;
+    structure.bounds.height = iY + linePix + descender;
+    structure.bounds.x = boundingBox.x;
+    structure.bounds.y = boundingBox.y;
+    
+    if (horizontalAlign == 0) structure.bounds.x += (boundingBox.width - maxWidth)/2;
+    if (horizontalAlign == 1) structure.bounds.x += (boundingBox.width - maxWidth);
+    if (verticalAlign == 0) structure.bounds.y += (boundingBox.height - structure.bounds.height) / 2;
+    if (verticalAlign == -1) structure.bounds.y += (boundingBox.height - structure.bounds.height);
+    
+    /*--- Offset all for external use --*/
+    
+    for (auto & ch : chars) {
+        ch.bounds.x += structure.bounds.x;
+        ch.bounds.y += structure.bounds.y;
+    }
+    
+    structure.chars = chars;
+    
+    return structure;
+}
+
+bool ofxPrecisionText::hasIndex(vector<int> indexes, int i) {
+    
+    if ( std::find(indexes.begin(), indexes.end(), i) != indexes.end()) return true;
+    return false;
 }
 
 void ofxPrecisionText::flagRedraw() {
@@ -305,19 +435,38 @@ void ofxPrecisionText::setLineHeight(float lHeight) {
     lineHeight = lHeight;
 }
 
-void ofxPrecisionText::setup(string fontLocation) {
 
+void ofxPrecisionText::setup(string fontLocation) {
+    
+    
+    
     /*-- Setup + optionally load a folder of TTFs --*/
 
     shouldRedraw = false;
     samplesChanged = false;
+    
+#ifdef TARGET_OPENGLES
+    fboType = GL_RGBA;
+#else
+    fboType = GL_RGBA32F_ARB;
+#endif
+    
+#ifdef TARGET_RASPBERRY_PI
+    numSamples = 0;
+#else
     numSamples = 8;
+#endif
+    pixelAligned = false;
     cacheCharLimit = 200;
     fontIndex = 0;
+    letterSpacing = 0;
+    hersheyStroke = 1.5;
     lineHeight = 1.4;
+    linkColor = ofColor(255,0,0);
+    
     ofDirectory dir(fontLocation);
     dir.allowExt("ttf");
-    hersheyBaseline = 31.0;
+    hersheyBaseline = 21.0;
 
     ofTrueTypeFont::setGlobalDpi(72);
     
@@ -362,142 +511,41 @@ void ofxPrecisionText::setStroke(float stroke) {
     hersheyStroke = stroke;
     hershey.setStroke(stroke);
 }
-ofRectangle ofxPrecisionText::draw(string text, glm::vec3 originPoint, float fSize, int horzAlign, int vertAlign) {
+ofxPrecisionTextStructure ofxPrecisionText::draw(string text, glm::vec3 originPoint, float fSize, int horzAlign, int vertAlign) {
     ofPoint p(originPoint.x, originPoint.y);
-    ofxPrecisionText::draw(text, p, fSize, horzAlign, vertAlign);
+    return ofxPrecisionText::draw(text, p, fSize, horzAlign, vertAlign);
 }
 
-ofRectangle ofxPrecisionText::draw(string text, ofPoint originPoint, float fSize, int horzAlign, int vertAlign) {
+ofxPrecisionTextStructure ofxPrecisionText::draw(string text, ofPoint originPoint, float fSize, int horzAlign, int vertAlign) {
     
-#ifdef TARGET_OPENGLES
-    int type = GL_RGBA;
-#else
-    int type = GL_RGBA32F_ARB;
-#endif
+    ofRectangle r(originPoint.x, originPoint.y, 444, 444);
+    return ofxPrecisionText::draw(text, r, fSize, horzAlign, vertAlign, true);
     
-#ifdef TARGET_RASPBERRY_PI
-    int samples = 0;
-#else
-    int sample = numSamples;
-#endif
-    
-    ofRectangle b(0,0, 999999, 999999);
-    fontSize = fSize;
-    horizontalAlign = horzAlign;
-    verticalAlign = vertAlign;
-    hershey.setScale(fontSize *  (1.0 / hersheyBaseline));
-    
-    
-    ofFbo * fbo;
-    string fboKey = getFboKey(text);
-    auto it = fboCache.find(fboKey);
-    if (it == fboCache.end()) {
-        fbo = new ofFbo();
-        string textCopy = text;
-        b = drawFbo(textCopy, b);
-        ofLog() << " Allocate " << b.width << " " << b.height;
-        fbo->allocate(b.width, b.height, type, numSamples);
-        samplesChanged = false;
-        ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << numSamples << " samples, " << originPoint.x << " x " << originPoint.y;
-        fboCache[fboKey] = fbo;
-        
-        
-    } else {
-        fbo = fboCache[fboKey];
-    }
-    
-    int xx = originPoint.x;
-    int yy = originPoint.y;
-    
-    if (verticalAlign == 0) yy -= fbo->getHeight() / 2;
-    if (verticalAlign == 1) yy -= fbo->getHeight();
-
-    if (horizontalAlign == 0) xx -= fbo->getWidth() / 2;
-    if (horizontalAlign == 1) xx -= fbo->getWidth();
-    
-    ofRectangle fboBox(xx,yy,fbo->getWidth(), fbo->getHeight());
-    
-    
-    if (it == fboCache.end() || shouldRedraw) {
-        
-        fbo->begin();
-        ofClear(255,0);
-        ofSetColor(255);
-        ofPushMatrix();
-        string textCopy = text;
-        drawFbo(textCopy, b);
-        ofPopMatrix();
-        fbo->end();
-        shouldRedraw = false;
-    }
-    
-    ofSetColor(255);
-    fbo->draw(xx, yy);
-    return fboBox;
 }
 
-ofRectangle ofxPrecisionText::draw(string text, ofRectangle boundingBox, float fSize, int horzAlign, int vertAlign) {
-    
-#ifdef TARGET_OPENGLES
-    int type = GL_RGBA;
-#else
-    int type = GL_RGBA32F_ARB;
-#endif
-    
-#ifdef TARGET_RASPBERRY_PI
-    int samples = 0;
-#else
-    int sample = numSamples;
-#endif
+ofxPrecisionTextStructure ofxPrecisionText::draw(string text, ofRectangle boundingBox, float fSize, int horzAlign, int vertAlign, bool isPoint) {
     
     fontSize = fSize;
     horizontalAlign = horzAlign;
     verticalAlign = vertAlign;
-    hershey.setScale(fontSize *  (1.0 / hersheyBaseline));
     
-    ofFbo * fbo;
-    string fboKey = getFboKey(text);
-    auto it = fboCache.find(fboKey);
-    if (it == fboCache.end()) {
-        fbo = new ofFbo();
-        ofRectangle b = boundingBox;
-        string textCopy = text;
-        formatParagraphs(textCopy, b);
-        fbo->allocate(b.width, b.height, type, numSamples);
-        samplesChanged = false;
-        ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << numSamples << " samples, " << b.width << " x " << b.height;
-        fboCache[fboKey] = fbo;
-        
-        
-    } else {
-        fbo = fboCache[fboKey];
-    }
+    string key = getFboKey(text);
+    if (allocateFbo( key, text, boundingBox ) || shouldRedraw) {
     
-    int xx = boundingBox.x;
-    int yy = boundingBox.y;
-    if (verticalAlign == 0) yy += (boundingBox.height - fbo->getHeight()) / 2;
-    if (verticalAlign == -1) yy += (boundingBox.height - fbo->getHeight());
-    
-    ofRectangle fboBox(xx,yy,fbo->getWidth(), fbo->getHeight());
-
-    ofSetColor(255);
-    
-    if (it == fboCache.end() || shouldRedraw) {
-    
-        fbo->begin();
+        fboCache[key]->begin();
         ofClear(255,0);
         ofSetColor(255);
         ofPushMatrix();
         string textCopy = text;
-        drawFbo(textCopy, boundingBox);
+        structCache[key] = drawFbo(textCopy, boundingBox, false, true, isPoint);
         ofPopMatrix();
-        fbo->end();
+        fboCache[key]->end();
         shouldRedraw = false;
     }
     
     ofSetColor(255);
-    fbo->draw(xx, yy);
-    return fboBox;
+    fboCache[key]->draw(structCache[key].bounds);
+    return structCache[key];
     
 }
     

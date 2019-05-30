@@ -18,6 +18,10 @@
 class ofxHersheyFont {
 	public:
 		ofxHersheyFont();
+    
+    
+        void setItalic(bool b, float slant = 3);
+        float getSimplex(int a, int b, int aa = -1, int bb = -1);
 
         void draw(string stringValue, float x, float y);
         void draw(string stringValue, float x, float y, float str);
@@ -34,6 +38,7 @@ class ofxHersheyFont {
 
 		ofColor color;
         float scale;
+        float italic;
         float stroke;
         float angle;
         bool centered;

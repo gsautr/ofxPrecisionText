@@ -158,23 +158,38 @@ void ofxHersheyFont::draw(string stringValue, ofRectangle rectangle, int horizon
     ofPopMatrix();
 }
 
+
+void ofxHersheyFont::setItalic(bool b, float slant) {
+    italic = (b) ? slant : 0.0;
+}
+
+
+float ofxHersheyFont::getSimplex(int a, int b, int aa, int bb) {
+    float ita = 0;
+    if (aa != -1 && bb != -1) {
+        float h = simplex[aa][bb];
+        ita = (h / 21.0) * italic;
+    }
+    return simplex[a][b] + ita;
+}
+
 //--------------------------------------------------------------
 void ofxHersheyFont::drawChar(int asciiValue, float stroke) {
 	
 	ofPath chPath;
-    ofPolyline line;
     
 //    line.begin();
 
 	//move to first coordinate
-	chPath.moveTo(simplex[asciiValue - 32][2], simplex[asciiValue - 32][3]);
+    chPath.moveTo(getSimplex(asciiValue - 32, 2, asciiValue - 32, 3), getSimplex(asciiValue - 32, 3));
 //    line.addVertex(simplex[asciiValue - 32][2], simplex[asciiValue - 32][3]);
 
 	//iterate through points of the character
 	for (int i = 4; i <= simplex[asciiValue - 32][0] * 2; i += 2)
 	{
-		int x = simplex[asciiValue - 32][i];
-		int y = simplex[asciiValue - 32][i + 1];
+		int x = getSimplex(asciiValue - 32, i, asciiValue - 32,i + 1);
+		int y = getSimplex(asciiValue - 32,i + 1);
+        
         
         if (x != -1) chPath.lineTo(x, y);
 //        if (x != -1) line.addVertex(x, y);
@@ -182,7 +197,10 @@ void ofxHersheyFont::drawChar(int asciiValue, float stroke) {
 		//skip -1,-1 value -> equals pen up operation / end of a line
 		//and move to next point
         if (x == -1) {
-            chPath.moveTo(simplex[asciiValue - 32][i + 2], simplex[asciiValue - 32][i + 3]);
+            int xx = getSimplex(asciiValue - 32, i + 2, asciiValue - 32, i + 3);
+            int yy = getSimplex(asciiValue - 32, i + 3);
+            
+            chPath.moveTo(xx, yy);
 //            line.addVertex(simplex[asciiValue - 32][i + 2], simplex[asciiValue - 32][i + 3]);
 			i += 2;
 		}
@@ -255,43 +273,56 @@ ofPath ofxHersheyFont::getPath(string stringValue, float scale) {
 }
 
 //--------------------------------------------------------------
+//--------------------------------------------------------------
 ofPath ofxHersheyFont::getPath(string stringValue, float xPos, float yPos, float scale) {
-
-	ofPath path;
-
-	//iterate through each character of the input string
-	for (int i = 0; i < stringValue.size(); i++)
-	{
-		//get ascii value of specific character from the inout string
-		int asciiValue = stringValue.at(i);
-
-		//only draw character if vectors are available, otherwise draw questionmark
-		if (asciiValue < 32 || asciiValue > 126) asciiValue = 63;
-
-		//moveto first coordinate of the character
-		path.moveTo(xPos + simplex[asciiValue - 32][2] * scale, yPos + (-1) * simplex[asciiValue - 32][3] * scale);
-
-		//iterate through points of each character
-		for (int j = 4; j <= simplex[asciiValue - 32][0] * 2; j += 2)
-		{
-			int x = simplex[asciiValue - 32][j];
-			int y = (-1) * simplex[asciiValue - 32][j + 1];
-
-			if (x != -1) path.lineTo(xPos + x * scale, yPos + y * scale);
-
-			if (x == -1) {
-				path.moveTo(xPos + simplex[asciiValue - 32][j + 2] * scale, yPos + (-1) * simplex[asciiValue - 32][j + 3] * scale);
-				j += 2;
-			}
-		}
-
-		//at the end of each character, set xPos to starting coordinate of next character
-		xPos += (float)simplex[asciiValue - 32][1] * scale;
-	}
-
-	path.setStrokeColor(color);
-	path.setStrokeWidth(1);
-	path.setFilled(false);
-
-	return path;
+    
+    ofPath path;
+    
+    //iterate through each character of the input string
+    for (int i = 0; i < stringValue.size(); i++)
+    {
+        //get ascii value of specific character from the inout string
+        int asciiValue = stringValue.at(i);
+        
+        //only draw character if vectors are available, otherwise draw questionmark
+        if (asciiValue < 32 || asciiValue > 126) asciiValue = 63;
+        
+        //moveto first coordinate of the character
+        
+        int xx = xPos + getSimplex(asciiValue - 32, 2, asciiValue - 32, 3) * scale;
+        int yy = yPos + (-1) * getSimplex(asciiValue - 32, 3) * scale;
+        
+        
+        
+        path.moveTo(xx, yy);
+        
+        //iterate through points of each character
+        for (int j = 4; j <= getSimplex(asciiValue - 32, 0) * 2; j += 2)
+        {
+            int x = getSimplex(asciiValue - 32, j, asciiValue - 32, j + 1);
+            int y = (-1) * getSimplex(asciiValue - 32, j + 1);
+            
+            if (x != -1) {
+                int xa = xPos + x * scale;
+                int ya = yPos + y * scale;
+                path.lineTo(xa, ya);
+            }
+            
+            if (x == -1) {
+                int xb = xPos + getSimplex(asciiValue - 32, j + 2, asciiValue - 32, j + 3) * scale;
+                int yb = yPos + (-1) * getSimplex(asciiValue - 32, j + 3) * scale;
+                path.moveTo(xb, yb);
+                j += 2;
+            }
+        }
+        
+        //at the end of each character, set xPos to starting coordinate of next character
+        xPos += (float)simplex[asciiValue - 32][1] * scale;
+    }
+    
+    path.setStrokeColor(color);
+    path.setStrokeWidth(1);
+    path.setFilled(false);
+    
+    return path;
 }

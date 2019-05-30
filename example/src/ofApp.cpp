@@ -10,7 +10,7 @@ void ofApp::setup(){
     fontStroke = 1.4;
     fontIndex = 0;
     lineHeight = 1;
-    
+    ofLog::setAutoSpace(true);
     ofSetFrameRate(60.0f);
     
 }
@@ -31,8 +31,8 @@ void ofApp::draw(){
     int hh = h - 300;
     
     ofRectangle A(w - ww - 100 - ww, 200, ww, hh);
-    ofRectangle B(w - ww - 50, 200, ww, hh/2);
-    ofRectangle C(w - ww - 50, 200 + hh/2, ww, hh/2);
+    ofRectangle B(w - ww - 50, 200 + hh/2 + 25, ww, (hh/2 ) - 25);
+    ofRectangle C(w - ww - 50, 200, ww, (hh/2) -25 );
     ofRectangle D(50, 200, w - ww - ww - 200, hh/2);
     ofRectangle E(50, 200 + hh/2, w - ww - ww - 200, hh/2);
     
@@ -47,71 +47,78 @@ void ofApp::draw(){
     
     ofPoint point = B.getCenter();
     
-    vector<ofRectangle> fboRects;
+    vector<ofxPrecisionTextStructure> fboRects;
     
-//    fboRects.push_back( text.draw("ofPoint", ofPoint(B.x, 100), 26, -1, 0) );
-//
-//    fboRects.push_back( text.draw("Hello Worldqgp", point, fontSize, horizontalAlign , verticalAlign) );
-//    fboRects.push_back( text.draw("Hello World", C, fontSize, horizontalAlign , verticalAlign) );
-//
-//    fboRects.push_back( text.draw("ofRectangle", ofPoint(A.x, 100), 26, -1, 0) );
-//
-    fboRects.push_back( text.draw("Hello [Hrlink](www.google.com) Wofsdfsdf \n fdsf \nrld fds dfds fdsf ds [Link2](www.wiki.com) ", A, fontSize, horizontalAlign , verticalAlign) );
+    ofSetLineWidth(1.5);
+    ofSetColor(0,255,255);
+    ofDrawRectangle(A);
+    ofDrawRectangle(C);
+    ofFill();
+    ofDrawLine(B.getLeft(), B.getCenter().y, B.getRight(), B.getCenter().y);
+    ofDrawLine(B.getCenter().x, B.getTop(), B.getCenter().x, B.getBottom());
+    ofNoFill();
+    
+    fboRects.push_back( text.draw("of**Point**", ofPoint(B.x, 100), 26, 1, 0) );
+    
+    fboRects.push_back( text.draw("Hello World", point, fontSize, horizontalAlign , verticalAlign) );
+    fboRects.push_back( text.draw("Hello World", C, fontSize, horizontalAlign , verticalAlign) );
+    
+    fboRects.push_back( text.draw("of**Rectangle**", ofPoint(A.x, 100), 26, 1, 0) );
+    
+    fboRects.push_back( text.draw("Nulla _facilisis_ euismod risus, eget **elementum** tortor pulvinar vel. Donec at ultrices mi.\n\n\n\n # Curabitur \nfringilla euismod luctus. Integer sem est, euismod cursus justo in, _placerat_ lacinia magna. [Suspendisse](ggogle.com) purus enim, **posuere**\nvitae lobortis eget, convallis eu tortor. Class aptent taciti sociosqu ad litora torquent per [conubia](hello) nostra, per [inceptos](fsdfds.com) himenaeos.", A, fontSize, horizontalAlign , verticalAlign) );
     
     
     text.setStroke(1.2);
     text.setFont(0);
     
-    fboRects.push_back( text.draw("ofxPrecision**Bold**And**Italic**", ofPoint(D.x, 100), 26, -1, 0) );
+    fboRects.push_back( text.draw("ofx**PrecisionText**", ofPoint(D.x, 100), 26, 1, 0) );
     
     text.setLineHeight(2);
     
     string outputA = "";
     
-    outputA += "Font: " + ofToString(text.fontList[fontIndex]);
-    outputA += "\nFont Size: " + ofToString(fontSize);
-    outputA += "\nFont Stroke: " + ofToString(fontStroke);
-    outputA += "\nLine Height: " + ofToString(lineHeight);
-    outputA += "\nFBO Samples: " + ofToString(text.numSamples);
-    outputA += "\nVert Align: " + ofToString(verticalAlign);
-    outputA += "\nHorz Align: " + ofToString(horizontalAlign);
+    outputA += "Font: **" + ofToString(text.fontList[fontIndex]) + "**";
+    outputA += "\nFont Size: **" + ofToString(fontSize) + "**";
+    outputA += "\nFont Stroke: **" + ofToString(fontStroke) + "**";
+    outputA += "\nLine Height: **" + ofToString(lineHeight) + "**";
+    outputA += "\nFBO Samples: **" + ofToString(text.numSamples) + "**";
+    outputA += "\nVert Align: **" + ofToString(verticalAlign) + "**";
+    outputA += "\nHorz Align: **" + ofToString(horizontalAlign) + "**";
     
     string outputB = "";
-    ;
-    outputB += "\n\nz/X: -/+ Font";
-    outputB += "\nW/E: -/+ Font Size";
-    outputB += "\nA/S: -/+ Font Stroke";
-    outputB += "\nD/F: -/+ Line Height";
-    outputB += "\nE/R: -/+ FBO Samples";
-    outputB += "\nArrow Keys: Vert/Horz Align";
+    outputB += "Z/X: -/+ **Font**";
+    outputB += "\nW/E: -/+ **Font Size**";
+    outputB += "\nA/S: -/+ **Font Stroke**";
+    outputB += "\nD/F: -/+ **Line Height**";
+    outputB += "\nE/R: -/+ **FBO Samples**";
+    outputB += "\nArrow Keys: **Vert/Horz Align**";
     
-//    text.draw(outputA, D, 12, -1, 1);
-//    text.setColor(ofColor(0,255,255));
-//    text.draw(outputB, E, 12, -1, 1);
+    text.draw(outputA, D, 12, -1, 1);
+    text.setColor(ofColor(0,255,255));
+    text.draw(outputB, E, 12, -1, 1);
     
     ofNoFill();
     ofSetColor(0,255,255, 50);
-    for (auto & r : fboRects) ofDrawRectangle(r);
-    ofSetColor(0,255,255);
-    ofDrawRectangle(A);
-    ofDrawRectangle(C);
-    ofFill();
-    ofDrawCircle(B.getCenter(), 4);
-    ofNoFill();
+    for (auto & r : fboRects) ofDrawRectangle(r.bounds);
     
     
     ofSetColor(255);
-//    ofDrawLine(fboRects[5].getBottomLeft(), fboRects[5].getBottomRight());
-//    ofDrawLine(fboRects[5].getBottomLeft(), fboRects[5].getBottomRight());
+    ofDrawLine(fboRects[5].bounds.getBottomLeft(), fboRects[5].bounds.getBottomRight());
+    ofDrawLine(fboRects[5].bounds.getBottomLeft(), fboRects[5].bounds.getBottomRight());
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
     
-    if (key == 'c') text.clearFboCache();
+    if (key == ' ') text.pixelAligned = !text.pixelAligned;
+    
+    if (key == 'b') text.clearFboCache();
 
     if (key == 'a') fontStroke -= 0.2;
     if (key == 's') fontStroke += 0.2;
+    
+    if (key == 'c') text.letterSpacing -= 0.25;
+    if (key == 'v') text.letterSpacing += 0.25;
     
     if (key == 'z') fontIndex -= 1;
     if (key == 'x') fontIndex += 1;
@@ -132,8 +139,8 @@ void ofApp::keyPressed(int key){
     if (key == OF_KEY_DOWN && verticalAlign > -1) verticalAlign -= 1;
     if (key == OF_KEY_UP && verticalAlign < 1) verticalAlign += 1;
     
-    if (key == 'q') fontSize -= 0.5;
-    if (key == 'w') fontSize += 0.5;
+    if (key == 'q') fontSize -= 0.1;
+    if (key == 'w') fontSize += 0.1;
     key -= 49;
     if (key >= 0 && key <= 9) fontIndex = key;
     
