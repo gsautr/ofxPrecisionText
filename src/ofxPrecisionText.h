@@ -20,8 +20,8 @@ struct ofxPrecisionTextChar {
     ofRectangle bounds;
 };
 
-struct ofxPrecisionTextStructure {
-
+struct ofxPrecisionStructure {
+    
     vector<int> h1;
     vector<int> h2;
     vector<int> h3;
@@ -52,7 +52,9 @@ struct ofxPrecisionTextRegex {
 #include "parseMarkdown.h"
 
 
-struct ofxPrecisionTextSettings {
+struct ofxPrecisionSettings {
+    
+    bool markdown;
     
     int fontIndex;
     float headingScale;
@@ -71,7 +73,9 @@ struct ofxPrecisionTextSettings {
     int horizontalAlign;
     int verticalAlign;
     
-    ofxPrecisionTextSettings() {
+    ofxPrecisionSettings() {
+        
+        markdown = true;
         
         fontIndex = 0;
         headingScale = 2;
@@ -100,78 +104,60 @@ struct ofxPrecisionTextSettings {
 class ofxPrecisionText {
 private:
     
+    ofxPrecisionSettings s;
     float dpi;
     int fboType;
-    
-    ofShader italicShader;
-    vector<string> splitString(int fromChar, string text, vector<int>);
     bool samplesChanged;
-    int cacheCharLimit;
-    
-    ofxPrecisionTextSettings s;
-    
-    
+    bool shouldRedraw;
     ofxHersheyFont hershey;
     ofFbo fbo;
     
+    vector<string> splitString(int fromChar, string text, vector<int>);
+    
     bool allocateFbo(string fboKey, string text, ofRectangle boundingBox, bool isPoint);
     
-    vector<int> findInternalIndices(string t, int start, vector<int> search);
-    bool shouldRedraw;
-    vector<int> regexReplace(string & text, string reg);
-    vector<ofxPrecisionTextRegex>  getMatchedStrings (string subject, string reg);
-    
-    std::map<string, ofxPrecisionTextStructure> structCache;
-    std::map<string, ofTrueTypeFont> fontCache;
-    std::map<string, ofFbo *> fboCache;
-    
-    string getFboKey(string text); /*-- Get unique hash for FBO cache --*/
-    
-    string defineFont(float fSize); /*-- Loads TTF to cache and returns font cache key --*/
-
-    ofRectangle getBounds(string text, float fSize, float x, float y); /*-- Get bounds for single text string --*/
     bool hasLink(vector<ofxPrecisionTextHyperlink> links, int i, ofxPrecisionTextHyperlink & link);
     bool hasIndex(vector<int> indexes, int i);
+    vector<int> regexReplace(string & text, string reg);
+    
+    std::map<string, ofxPrecisionStructure> structCache;
+    std::map<string, ofFbo *> fboCache;
+    std::map<string, ofTrueTypeFont> fontCache;
+    std::map<string, string> markdownCache;
+    
+    string defineFont(float fSize);
+    string getFboKey(string text);
+    
+    ofRectangle getBounds(string text, float fSize, float x, float y);
     void drawString(string text, float fSize, float xx, float yy);
     
-    
-    ofxPrecisionTextStructure drawFbo(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false); /*-- Draw text string with line breaks and formatting --*/
+    ofxPrecisionStructure drawFbo(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false); /*-- Draw text string with line breaks and formatting --*/
     
 public:
     vector<string> fontList;
-
     
-    int fontIndex;
-    float headingScale;
+    /*-- Force redraw on FBO cache --*/
     
-    ofColor strokeColor;
-    ofColor linkColor;
-    
-    bool pixelAligned;
-    int numSamples;
-    
-    float fontSize;
-    float lineHeight;
-    float letterSpacing;
-    float strokeWidth;
-    
-    int horizontalAlign;
-    int verticalAlign;
-    
-    
-    
-    void flagRedraw(); /*-- Force redraw on FBO cache --*/
-    
-    void setup(string fontLocation = "");  /*-- Setup + optionally load a folder of TTFs --*/
-    
+    void flagRedraw();
     void clearFboCache();
     
-
-    ofxPrecisionTextStructure draw(string text, glm::vec3 originPoint, ofxPrecisionTextSettings settings);
-    ofxPrecisionTextStructure draw(string text, ofPoint originPoint, ofxPrecisionTextSettings settings);
-    ofxPrecisionTextStructure draw(string text, int x, int y, int width, int height, ofxPrecisionTextSettings settings);
-    ofxPrecisionTextStructure draw(string text, ofRectangle boundingBox, ofxPrecisionTextSettings settings, bool isPoint = false);
+    /*-- Setup w. optional TTFs --*/
     
-    void set(ofxPrecisionTextSettings settings);
+    void setup(string fontLocation = "");
+    
+    /*-- ofxPrecisionSettings --*/
+    
+    void set(ofxPrecisionSettings settings);
+    
+    /*-- Draw from ofPoint --*/
+    
+    ofxPrecisionStructure draw(string text, glm::vec3 originPoint, ofxPrecisionSettings settings);
+    ofxPrecisionStructure draw(string text, ofPoint originPoint, ofxPrecisionSettings settings);
+    
+    /*-- Draw from ofRectangle --*/
+    
+    ofxPrecisionStructure draw(string text, int x, int y, int width, int height, ofxPrecisionSettings settings);
+    ofxPrecisionStructure draw(string text, ofRectangle boundingBox, ofxPrecisionSettings settings, bool isPoint = false);
+    
     
 };

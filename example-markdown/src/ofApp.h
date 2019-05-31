@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxPrecisionDocument.h"
+#include "ofxPrecisionInput.h"
 
 
 class ofApp : public ofBaseApp{
@@ -10,7 +11,7 @@ class ofApp : public ofBaseApp{
 		void update();
 		void draw();
 		
-		void keyPressed(int key);
+		void keyPressed(ofKeyEventArgs & e);
 		void keyReleased(int key);
 		void mouseMoved(int x, int y);
 		void mouseDragged(int x, int y, int button);
@@ -24,4 +25,6 @@ class ofApp : public ofBaseApp{
     
     
         ofxPrecisionDocument doc;
+        ofxPrecisionInput input;
+        ofxPrecisionSettings settings;
 };

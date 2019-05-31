@@ -31,14 +31,23 @@ struct ofxPrecisionTextRegexRules {
     string regex;
 };
 
-ofxPrecisionTextStructure parseMarkdown(string & text, bool asHtml);
+ofxPrecisionStructure parseMarkdown(string & text, bool asHtml);
 
-int parseLine(string& text, ofxPrecisionTextStructure & output, bool asHtml, vector<ofxPrecisionTextRegex> & list);
+int parseLine(string& text, ofxPrecisionStructure & output, bool asHtml, vector<ofxPrecisionTextRegex> & list);
 
 int parse(string & s, int type, vector<ofxPrecisionTextRegex> & list, bool findOnce = false);
 
 int parseRegex( string &s, string &search, string &replace, smatch & match, vector<ofxPrecisionTextRegex> & list, int type = PRECISION_ITALIC);
 
 bool searchHeadersStyle(string& stringToReturn, smatch& match);
+
+
+
+vector<ofxPrecisionTextRegex>  parseMatches(string subject, string reg);
+
+vector<int> parseIndexes(string & text, string regex);
+
+
+vector<string> parseWithIndexes(int fromChar, string text, vector<int> indices);
 
 #endif /* SRC_PARSE_MARKDOWN_H_ */

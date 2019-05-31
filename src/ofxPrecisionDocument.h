@@ -7,7 +7,7 @@ private:
     string clipboard;
 public:
     ofxPrecisionText text;
-    ofxPrecisionTextStructure structure;
+    ofxPrecisionStructure structure;
     float pressTimestamp;
     int pressCounter;
     float pressTimeLimit;
@@ -16,7 +16,6 @@ public:
     
     void copyToClipboard() {
         if (indexA != indexB) ofGetWindowPtr()->setClipboardString(clipboard);
-        //        clipboardContents = ofGetWindowPtr()->getClipboardString();
     }
     ofRectangle getPreciseRect(int i) {
         
@@ -115,7 +114,8 @@ public:
         return chosen;
     }
     
-    void draw(string text, ofRectangle boundingBox, ofxPrecisionTextSettings settings, bool isPoint = false) {
+    
+    ofxPrecisionStructure draw(string text, ofRectangle boundingBox, ofxPrecisionSettings settings, bool isPoint = false) {
         
         structure = ofxPrecisionText::draw(text, boundingBox, settings, false);
         
@@ -153,6 +153,8 @@ public:
             }
             ofPopMatrix();
         }
+        
+        return structure;
         
     }
     

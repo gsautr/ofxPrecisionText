@@ -55,6 +55,66 @@ extern bool current_paragraph;
 extern bool current_list;
 
 
+bool sortInts(int a, int b) {
+    return a < b;
+}
+
+vector<ofxPrecisionTextRegex> parseMatches(string subject, string reg ){
+    
+    vector<ofxPrecisionTextRegex> results;
+    try {
+        regex re(reg);
+        sregex_iterator next(subject.begin(), subject.end(), re);
+        sregex_iterator end;
+        while (next != end) {
+            smatch match = *next;
+            ofxPrecisionTextRegex m;
+            m.start = next->position();
+            m.size = std::distance(next, end);
+            m.match = next->str();
+            //            ofLog() << m.match;
+            results.push_back(m);
+            next++;
+        }
+    } catch (std::regex_error& e) {
+        // Syntax error in the regular expression
+        ofLogError("Error in regular expression");
+    }
+    return results;
+}
+
+vector<int> parseIndexes(string & text, string regex) {
+    
+    vector<int> indexes;
+    int iter = 0;
+    for (auto & reg : parseMatches(text, regex)) {
+        int start = reg.start;
+        indexes.push_back(start);
+    }
+    
+    return indexes;
+}
+
+
+vector<string> parseWithIndexes(int fromChar, string text, vector<int> indices) {
+    indices.push_back(fromChar);
+    indices.push_back(fromChar + text.size());
+    ofSort(indices, sortInts);
+    vector<string> output;
+    string t = text;
+    for (int i = 0; i < indices.size() - 1; i++ ) {
+        int iA = indices[i] - fromChar;
+        int iB = indices[i+1] - fromChar - iA;
+        if (iA < text.size()) {
+            string sub = t.substr(iA, iB);
+            output.push_back( sub );
+        }
+    }
+    return output;
+    
+}
+
+
 void generate(string &s, string &regex) {
     
     std::regex r(regex);
@@ -113,12 +173,12 @@ int parseRegex( string &s, string &search, string &replace , smatch & match, vec
 }
 
 
-ofxPrecisionTextStructure parseMarkdown(string & source, bool asHtml) {
+ofxPrecisionStructure parseMarkdown(string & source, bool asHtml) {
     
     
     vector<ofxPrecisionTextRegex> list;
     
-    ofxPrecisionTextStructure output;
+    ofxPrecisionStructure output;
     output.inSize = source.size();
     output.outSize = 0;
     output.removed = 0;
@@ -294,7 +354,7 @@ int parse(string & s, int type, vector<ofxPrecisionTextRegex> & list, bool findO
     return removedCounterForLine;
 }
 
-int parseLine(string& text, ofxPrecisionTextStructure & output, bool asHtml, vector<ofxPrecisionTextRegex> & list) {
+int parseLine(string& text, ofxPrecisionStructure & output, bool asHtml, vector<ofxPrecisionTextRegex> & list) {
     
     
     int removedCounterForLine = 0;
