@@ -27,6 +27,8 @@ void ofApp::draw(){
     
     doc.draw(txt, bounds, settings);
     
+    settings.markdown = false;
+    
     bounds.y += ofGetHeight()/2;
     input.draw(bounds, settings);
     
@@ -38,7 +40,6 @@ void ofApp::draw(){
 //--------------------------------------------------------------
 void ofApp::keyPressed(ofKeyEventArgs & e){
     
-    ofLog() << e.key;
     if (e.key == 'c') doc.copyToClipboard();
     input.keyPressed(e.key);
 }

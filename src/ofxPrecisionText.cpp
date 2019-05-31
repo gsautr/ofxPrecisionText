@@ -10,7 +10,7 @@ bool ofxPrecisionText::allocateFbo(string fboKey, string text, ofRectangle bound
     auto it = fboCache.find(fboKey);
     if (it == fboCache.end()) {
         ofFbo * fbo = new ofFbo();
-        structCache[fboKey] = drawFbo(text, boundingBox, true, isPoint);;
+        structCache[fboKey] = generateStructure(text, boundingBox, true, isPoint);;
         fbo->allocate(structCache[fboKey].bounds.width, structCache[fboKey].bounds.height, fboType, s.numSamples);
         ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << s.numSamples << " samples, " << structCache[fboKey].bounds.width << " x " << structCache[fboKey].bounds.height;
         fboCache[fboKey] = fbo;
@@ -140,12 +140,8 @@ bool ofxPrecisionText::hasLink(vector<ofxPrecisionTextHyperlink> links, int i, o
 }
 
 
-
-ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundingBox, bool dontDraw, bool isPoint) {
+ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectangle boundingBox, bool dontDraw, bool isPoint) {
     
-    
-    
-    string fontKey = defineFont(s.fontSize);
     ofxPrecisionStructure structure;
     vector<ofxPrecisionTextChar> chars;
     string outputString = "";
@@ -160,61 +156,60 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
         }
         
         text = markdownCache[text];
-        
-        
-        /* -- Generate chars -- */
-        
-        bool isBold = false;
-        bool isItalic = false;
-        bool isH1 = false;
-        bool isH2 = false;
-        bool isH3 = false;
-        
-        int bC = 0;
-        
-        for (int i = 0; i < text.size(); i++) {
-            
-            if (hasIndex(structure.bold, i)) {
-                bC += 1;
-                isBold = !isBold;
-                
-            }
-            if (hasIndex(structure.italic, i)) isItalic = !isItalic;
-            if (hasIndex(structure.h1, i)) isH1 = !isH1;
-            if (hasIndex(structure.h2, i)) isH2 = !isH2;
-            if (hasIndex(structure.h3, i)) isH3 = !isH3;
-            
-            ofxPrecisionTextChar ch;
-            ch.isHeading = 0;
-            ch.fontSize = s.fontSize;
-            ch.isItalic =  false;
-            ch.isLink = false;
-            ch.isLineEnd = false;
-            ch.isBold = isBold;
-            ch.isItalic = isItalic;
-            
-            if (isH1) ch.isHeading += 1;
-            if (isH2) ch.isHeading += 2;
-            if (isH3) ch.isHeading += 3;
-            if (ch.isHeading > 0) {
-                float extra = (s.fontSize * s.headingScale) - s.fontSize;
-                extra /= (float)ch.isHeading;
-                ch.fontSize += extra;
-            }
-            
-            
-            ofxPrecisionTextHyperlink link;
-            if (hasLink(structure.links, i, link)) ch.isLink = true;
-            
-            string l = ofToString(text[i]);
-            ch.letter = l;
-            ch.bounds = getBounds(l, ch.fontSize, 0,0);
-            chars.push_back(ch);
-            outputString += l;
-            
-        }
     }
     
+    
+    /* -- Generate chars -- */
+    
+    bool isBold = false;
+    bool isItalic = false;
+    bool isH1 = false;
+    bool isH2 = false;
+    bool isH3 = false;
+    
+    int bC = 0;
+    
+    for (int i = 0; i < text.size(); i++) {
+        
+        if (hasIndex(structure.bold, i)) {
+            bC += 1;
+            isBold = !isBold;
+            
+        }
+        if (hasIndex(structure.italic, i)) isItalic = !isItalic;
+        if (hasIndex(structure.h1, i)) isH1 = !isH1;
+        if (hasIndex(structure.h2, i)) isH2 = !isH2;
+        if (hasIndex(structure.h3, i)) isH3 = !isH3;
+        
+        ofxPrecisionTextChar ch;
+        ch.isHeading = 0;
+        ch.fontSize = s.fontSize;
+        ch.isItalic =  false;
+        ch.isLink = false;
+        ch.isLineEnd = false;
+        ch.isBold = isBold;
+        ch.isItalic = isItalic;
+        
+        if (isH1) ch.isHeading += 1;
+        if (isH2) ch.isHeading += 2;
+        if (isH3) ch.isHeading += 3;
+        if (ch.isHeading > 0) {
+            float extra = (s.fontSize * s.headingScale) - s.fontSize;
+            extra /= (float)ch.isHeading;
+            ch.fontSize += extra;
+        }
+        
+        
+        ofxPrecisionTextHyperlink link;
+        if (hasLink(structure.links, i, link)) ch.isLink = true;
+        
+        string l = ofToString(text[i]);
+        ch.letter = l;
+        ch.bounds = getBounds(l, ch.fontSize, 0,0);
+        chars.push_back(ch);
+        outputString += l;
+        
+    }
     
     /*-- Define positions and new lines --*/
     
@@ -229,10 +224,8 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
     vector<string> words = parseWithIndexes(0, outputString, spaces);
     
     for (auto & w : words) {
-//        if (outputString.back() == ' ' && i == ) w += " ";
         int ww = 0;
         int xx = iX;
-//        int i = 0;
         for (auto & l : w) {
             
             ofxPrecisionTextChar & ch = chars[iChars];
@@ -253,7 +246,6 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
             }
             if (iX > maxWidth) maxWidth = iX;
             iChars += 1;
-//            i += 1;
         }
         
         if (iX + 1 > boundingBox.width && ww < boundingBox.width) {
@@ -281,6 +273,8 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
     
     
     /*--- Hacky horizontal  --*/
+    
+    
     
     float lastY = chars[0].bounds.y;
     float lastX = chars[0].bounds.x;
@@ -337,10 +331,27 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
         lastX = ch.bounds.x + ch.bounds.width;
         
     }
+    structure.bounds.width = maxWidth;
+    float descender = s.fontSize * 0.25;
+    structure.bounds.height = iY + linePix;
+    structure.chars = chars;
+    
+    ofLog() << structure.bounds;
+    
+    return structure;
+}
+
+ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundingBox, bool dontDraw, bool isPoint) {
+    
+    
+    
+    string fontKey = defineFont(s.fontSize);
+    ofxPrecisionStructure & structure = structCache[getFboKey(text)];
+    
     
     if (!dontDraw) {
         
-        for (auto & ch : chars) {
+        for (auto & ch : structure.chars) {
             
             if ( int(ch.letter[0]) != 10 && int(ch.letter[0]) != 0 ) {
                 
@@ -359,12 +370,6 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
         }
     }
     
-    structure.bounds.width = maxWidth;
-    float descender = s.fontSize * 0.25;
-    structure.bounds.height = iY + linePix;
-    
-    
-    structure.chars = chars;
     
     return structure;
 }
@@ -434,22 +439,48 @@ ofxPrecisionStructure ofxPrecisionText::draw(string text, ofRectangle boundingBo
     
     s = settings;
     
+    string fboKey = getFboKey(text);
     string key = getFboKey(text);
     
-    if (allocateFbo( key, text, boundingBox, isPoint ) || shouldRedraw) {
+//    if (allocateFbo( key, text, boundingBox, isPoint ) || shouldRedraw) {
+//
+//        ofLog() << "DRAW";
+//        fboCache[key]->begin();
+//        ofClear(255,0);
+//        ofSetColor(255);
+//        ofPushMatrix();
+//        string textCopy = text;
+//        drawFbo(textCopy, boundingBox, false, isPoint);
+//        ofPopMatrix();
+//        fboCache[key]->end();
+//        shouldRedraw = false;
+//    }
+    
+    
+    auto it = fboCache.find(fboKey);
+    if (it == fboCache.end()) {
+        ofFbo * fbo = new ofFbo();
+        structCache[fboKey] = generateStructure(text, boundingBox, true, isPoint);;
+        fbo->allocate(structCache[fboKey].bounds.width, structCache[fboKey].bounds.height, fboType, s.numSamples);
+        ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << s.numSamples << " samples, " << structCache[fboKey].bounds.width << " x " << structCache[fboKey].bounds.height;
+        fboCache[fboKey] = fbo;
         
-        fboCache[key]->begin();
+        
+        
+        fboCache[fboKey]->begin();
         ofClear(255,0);
         ofSetColor(255);
         ofPushMatrix();
-        string textCopy = text;
-        structCache[key] = drawFbo(textCopy, boundingBox, false, isPoint);
+        drawFbo(text, boundingBox, false, isPoint);
         ofPopMatrix();
-        fboCache[key]->end();
+        fboCache[fboKey]->end();
         shouldRedraw = false;
+        
     }
     
     ofxPrecisionStructure & structure = structCache[key];
+    
+    
     structCache[key].bounds.x = boundingBox.x;
     structCache[key].bounds.y = boundingBox.y;
     

@@ -131,7 +131,8 @@ private:
     ofRectangle getBounds(string text, float fSize, float x, float y);
     void drawString(string text, float fSize, float xx, float yy);
     
-    ofxPrecisionStructure drawFbo(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false); /*-- Draw text string with line breaks and formatting --*/
+    ofxPrecisionStructure drawFbo(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false);
+    ofxPrecisionStructure generateStructure(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false);
     
 public:
     vector<string> fontList;
