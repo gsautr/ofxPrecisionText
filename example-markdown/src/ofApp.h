@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxPrecisionText.h"
+#include "ofxPrecisionDocument.h"
 
 
 class ofApp : public ofBaseApp{
@@ -22,8 +22,6 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
     
-        ofxPrecisionText text;
-        ofxPrecisionTextStructure structure;
-    int pressed, dragged;
-    int getNearestCharacter(int x, int y);
+    
+        ofxPrecisionDocument doc;
 };

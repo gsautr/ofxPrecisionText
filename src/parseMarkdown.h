@@ -33,7 +33,9 @@ struct ofxPrecisionTextRegexRules {
 
 ofxPrecisionTextStructure parseMarkdown(string & text, bool asHtml);
 
-void parseLine(string& text, ofxPrecisionTextStructure & output, bool asHtml, vector<ofxPrecisionTextRegex> & list);
+int parseLine(string& text, ofxPrecisionTextStructure & output, bool asHtml, vector<ofxPrecisionTextRegex> & list);
+
+int parse(string & s, int type, vector<ofxPrecisionTextRegex> & list, bool findOnce = false);
 
 int parseRegex( string &s, string &search, string &replace, smatch & match, vector<ofxPrecisionTextRegex> & list, int type = PRECISION_ITALIC);
 

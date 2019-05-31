@@ -1,6 +1,7 @@
 #pragma once
 #include "ofxHersheyFont.h"
 
+
 struct ofxPrecisionTextHyperlink {
     int start;
     int end;
@@ -11,11 +12,11 @@ struct ofxPrecisionTextHyperlink {
 struct ofxPrecisionTextChar {
     string letter;
     float fontSize;
+    bool isLineEnd;
     bool isBold;
     bool isItalic;
     bool isLink;
     int isHeading;
-    bool isNewline;
     ofRectangle bounds;
 };
 
@@ -50,6 +51,52 @@ struct ofxPrecisionTextRegex {
 
 #include "parseMarkdown.h"
 
+
+struct ofxPrecisionTextSettings {
+    
+    int fontIndex;
+    float headingScale;
+    
+    ofColor strokeColor;
+    ofColor linkColor;
+    
+    bool pixelAligned;
+    int numSamples;
+    
+    float fontSize;
+    float lineHeight;
+    float letterSpacing;
+    float strokeWidth;
+    
+    int horizontalAlign;
+    int verticalAlign;
+    
+    ofxPrecisionTextSettings() {
+        
+        fontIndex = 0;
+        headingScale = 2;
+        
+        strokeColor = ofColor(255);
+        linkColor = ofColor(0,255,255);
+        
+        pixelAligned = false;
+#ifdef TARGET_RASPBERRY_PI
+        numSamples = 0;
+#else
+        numSamples = 8;
+#endif
+        
+        fontSize = 14;
+        strokeWidth = 1.2;
+        lineHeight = 1;
+        letterSpacing = 0;
+        
+        horizontalAlign = -1;
+        verticalAlign = 1;
+    }
+};
+
+
 class ofxPrecisionText {
 private:
     
@@ -60,11 +107,10 @@ private:
     vector<string> splitString(int fromChar, string text, vector<int>);
     bool samplesChanged;
     int cacheCharLimit;
-    float headingScale;
-    float hersheyStroke;
-    float hersheyBaseline;
-    ofColor strokeColor;
-    ofColor linkColor;
+    
+    ofxPrecisionTextSettings s;
+    
+    
     ofxHersheyFont hershey;
     ofFbo fbo;
     
@@ -94,38 +140,38 @@ private:
 public:
     vector<string> fontList;
 
+    
+    int fontIndex;
+    float headingScale;
+    
+    ofColor strokeColor;
+    ofColor linkColor;
+    
     bool pixelAligned;
     int numSamples;
+    
     float fontSize;
-    int fontIndex;
     float lineHeight;
     float letterSpacing;
-    int horizontalAlign, verticalAlign;
+    float strokeWidth;
+    
+    int horizontalAlign;
+    int verticalAlign;
+    
+    
     
     void flagRedraw(); /*-- Force redraw on FBO cache --*/
     
-    void setLineHeight(float lHeight);
-    
     void setup(string fontLocation = "");  /*-- Setup + optionally load a folder of TTFs --*/
-    
-    void setFboSamples(int fboSamples = 8);  /*-- Set number of antialiasing passes --*/
     
     void clearFboCache();
     
-    void setHeadingScale(float hScale);
-    
-    void setFont(int index); /*-- Set font via index --*/
-    
-    void setColor(ofColor color);
-    
-    void setStroke(float stroke);
-    
-    void setFontSize(float fSize);
 
-    ofxPrecisionTextStructure draw(string text, glm::vec3 originPoint, int horzAlign = -1, int vertAlign = 0);
-    ofxPrecisionTextStructure draw(string text, ofPoint originPoint, int horzAlign = -1, int vertAlign = 0);
-    ofxPrecisionTextStructure draw(string text, ofRectangle boundingBox, int horzAlign = -1, int vertAlign = 0, bool isPoint = false);
+    ofxPrecisionTextStructure draw(string text, glm::vec3 originPoint, ofxPrecisionTextSettings settings);
+    ofxPrecisionTextStructure draw(string text, ofPoint originPoint, ofxPrecisionTextSettings settings);
+    ofxPrecisionTextStructure draw(string text, int x, int y, int width, int height, ofxPrecisionTextSettings settings);
+    ofxPrecisionTextStructure draw(string text, ofRectangle boundingBox, ofxPrecisionTextSettings settings, bool isPoint = false);
     
-    
+    void set(ofxPrecisionTextSettings settings);
     
 };

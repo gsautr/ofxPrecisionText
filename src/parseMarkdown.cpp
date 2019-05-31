@@ -64,7 +64,6 @@ void generate(string &s, string &regex) {
         std::smatch m = *i;
         std::cout << m.str() << " at position " << m.position() << " " << m.str().length() << '\n';
         for (int ii = 0; ii < m.size(); ii++) {
-            ofLog() << "HEY" << m[ii];
         }
         
     }
@@ -74,7 +73,7 @@ int parseRegex( string &s, string &search, string &replace , smatch & match, vec
     
     int removedCounter = 0;
     
-    ofLog() << "---";
+    int origSize = search.length();
     
     
     for( size_t pos = 0; ; pos += replace.length() )
@@ -83,41 +82,30 @@ int parseRegex( string &s, string &search, string &replace , smatch & match, vec
         if( pos == string::npos )
             break;
         
-        
         ofxPrecisionTextRegex r;
         r.toBeReplaced = search;
         r.originalStart = pos;
         r.start = pos;
         r.size = replace.length();
         r.end = pos + replace.length();
-        r.match = replace;
+        r.match = match[2];
         r.type = type;
         list.push_back(r);
-        
-        ofLog() << "Add" << pos << search.length() << search.length() - replace.size();
-        ofLog() << search;
-        
-        int off = search.length() - replace.size();
+//
+        int off = origSize - replace.size();
         
         for (auto & rr : list) {
             if (r.start < rr.start) {
                 rr.start -= off;
-//                rr.end -= off;
-//                ofLog() << "Rem" << rr.start;
             }
             if (r.end < rr.end) {
                 rr.end -= off;
-//                ofLog() << "Rem" << rr.start;
-//                ofLog() << rr.toBeReplaced;
             }
         }
         
-        s.erase( pos, search.length() );
+        s.erase( pos, origSize );
         
-        removedCounter += (search.length() - replace.size());
-        string chaos = "";
-        for (int i = 0; i < search.length(); i++) chaos += "@";
-//        s.insert( pos, chaos );
+        removedCounter += (origSize - replace.size());
         s.insert( pos, replace );
 
     }
@@ -143,10 +131,51 @@ ofxPrecisionTextStructure parseMarkdown(string & source, bool asHtml) {
     string outText;
     bool hadNl = ( source.back() == '\n' ); // did it have a newline?
 
+    int outSize = 0;
     while (getline(f, line)) {
         line += '\n';
-        parseLine(line, output, false, list);
+        int outNew = parseLine(line, output, false, list);
+        
+        /*-- Parse REGEX candidates to indexes --*/
+        
+        for (auto & r : list) {
+            if (r.type == PRECISION_BOLD) {
+                output.bold.push_back(r.start + outSize);
+                output.bold.push_back(r.end + outSize);
+            }
+            if (r.type == PRECISION_LINK) {
+                
+                ofxPrecisionTextHyperlink link;
+                link.start = r.start + outSize;
+                link.end = r.end + outSize;
+                link.url = r.match;
+                output.links.push_back(link);
+                
+            }
+            
+            if (r.type == PRECISION_ITALIC) {
+                output.italic.push_back(r.start + outSize);
+                output.italic.push_back(r.end + outSize);
+            }
+            if (r.type == PRECISION_H1) {
+                output.h1.push_back(r.start + outSize);
+                output.h1.push_back(r.end + outSize);
+            }
+            if (r.type == PRECISION_H2) {
+                output.h2.push_back(r.start + outSize);
+                output.h2.push_back(r.end + outSize);
+            }
+            if (r.type == PRECISION_H3) {
+                output.h3.push_back(r.start + outSize);
+                output.h3.push_back(r.end + outSize);
+            }
+        }
+        
+        outSize = outNew;
+        list.clear();
     }
+    
+//    ofLog() << "Total" << output.bold.size();
 
     /*-- Preserve new lines --*/
 
@@ -155,28 +184,6 @@ ofxPrecisionTextStructure parseMarkdown(string & source, bool asHtml) {
         output.outSize -= 1;
     }
     
-    /*-- Parse REGEX candidates to indexes --*/
-
-    for (auto & r : list) {
-        if (r.type == PRECISION_BOLD) {
-            output.bold.push_back(r.start);
-            output.bold.push_back(r.end);
-        }
-        if (r.type == PRECISION_LINK) {
-            
-            ofxPrecisionTextHyperlink link;
-            link.start = r.start;
-            link.end = r.end;
-//            link.url = url;
-            output.links.push_back(link);
-            
-        }
-//        if (r.type == PRECISION_ITALIC) {
-//            output.italic.push_back(r.start);
-//            output.italic.push_back(r.end);
-//        }
-        if (r.type == PRECISION_H1) output.h1.push_back(r.start);
-    }
     
     /*-- Check parity of indexes and string lengths --*/
     
@@ -187,7 +194,107 @@ ofxPrecisionTextStructure parseMarkdown(string & source, bool asHtml) {
     return output;
 }
 
-void parseLine(string& text, ofxPrecisionTextStructure & output, bool asHtml, vector<ofxPrecisionTextRegex> & list) {
+
+int parse(string & s, int type, vector<ofxPrecisionTextRegex> & list, bool findOnce) {
+    
+    int removedCounterForLine = 0;
+    regex regex;
+    smatch match;
+    
+    string toReplace = "";
+    string search = "";
+    
+    bool isFoundOnce = false;
+    bool asHtml = false;
+    if (type == PRECISION_BOLD) regex = bold_regex;
+    if (type == PRECISION_ITALIC) regex = italic_regex;
+    if (type == PRECISION_LINK) regex = url_regex;
+    if (type == PRECISION_H1) regex = h1_regex;
+    if (type == PRECISION_H2) regex = h2_regex;
+    if (type == PRECISION_H3) regex = h3_regex;
+    
+    while (regex_search(s, match, regex) && !isFoundOnce) {
+        
+        if (regex_search(s, match, regex)) {
+            if (current_list) {
+                current_list = false;
+                if (asHtml) s += "</ul>";
+            }
+            if (need_paragraph) {
+                if (asHtml) toReplace += "<p>";
+                need_paragraph = false;
+                current_paragraph = true;
+            }
+            if (type == PRECISION_BOLD) {
+                
+                if (asHtml) toReplace += "<b>";
+                toReplace += match[1];
+                if (asHtml) toReplace += "</b>";
+                search += "**";
+                search += match[1];
+                search += "**";
+            }
+            
+            if (type == PRECISION_LINK) {
+                
+                if (asHtml) toReplace +="<a href=\"";
+                if (asHtml) toReplace += match[2];
+                string url = match[2];
+                if (asHtml) toReplace += "\">";
+                toReplace += match[1];
+                if (asHtml) toReplace += "</a>";
+                search += "[";
+                search += match[1];
+                search += "]";
+                search += "(";
+                search += match[2];
+                search += ")";
+            }
+            
+            if (type == PRECISION_H3) {
+                if (asHtml) toReplace += "<h3>";
+                toReplace += match[1];
+                if (asHtml) toReplace += "</h3>";
+                search += "### ";
+                search += match[1];
+                isFoundOnce = true;
+            }
+            if (type == PRECISION_H2) {
+                if (asHtml) toReplace += "<h2>";
+                toReplace += match[1];
+                if (asHtml) toReplace += "</h2>";
+                search += "## ";
+                search += match[1];
+                isFoundOnce = true;
+            }
+            if (type == PRECISION_H1) {
+                if (asHtml) toReplace += "<h1>";
+                toReplace += match[1];
+                if (asHtml) toReplace += "</h1>";
+                search += "# ";
+                search += match[1];
+                isFoundOnce = true;
+            }
+            
+            if (type == PRECISION_ITALIC) {
+                if (asHtml) toReplace += "<i>";
+                toReplace += match[1];
+                if (asHtml) toReplace += "</i>";
+                search += "*";
+                search += match[1];
+                search += "*";
+            }
+            
+            removedCounterForLine += parseRegex(s, search, toReplace, match, list, type);
+        }
+        toReplace = "";
+        search = "";
+    }
+    
+    return removedCounterForLine;
+}
+
+int parseLine(string& text, ofxPrecisionTextStructure & output, bool asHtml, vector<ofxPrecisionTextRegex> & list) {
     
     
     int removedCounterForLine = 0;
@@ -226,144 +333,72 @@ void parseLine(string& text, ofxPrecisionTextStructure & output, bool asHtml, ve
         need_paragraph = true;
         current_paragraph = false;
     }
+    bool findOnce = true;
+    
+    removedCounterForLine += parse(stringToReturn, PRECISION_H3, list, findOnce);
+    removedCounterForLine += parse(stringToReturn, PRECISION_H2, list, findOnce);
+    removedCounterForLine += parse(stringToReturn, PRECISION_H1, list, findOnce);
+    removedCounterForLine += parse(stringToReturn, PRECISION_BOLD, list);
+    removedCounterForLine += parse(stringToReturn, PRECISION_LINK, list);
+    removedCounterForLine += parse(stringToReturn, PRECISION_ITALIC, list);
     
     
-    while (regex_search(stringToReturn, match, bold_regex) || regex_search(stringToReturn, match, italic_regex)
-           || regex_search(stringToReturn, match, url_regex) || searchHeadersStyle(stringToReturn, match)
-           || regex_search(stringToReturn, match, img_regex)
-           || regex_search(stringToReturn, match, list_regex)) {
-        if (regex_search(stringToReturn, match, bold_regex)) {
-            if (current_list) {
-                current_list = false;
-                if (asHtml) stringToReturn += "</ul>";
-            }
-            if (need_paragraph) {
-                if (asHtml) toReplace += "<p>";
-                need_paragraph = false;
-                current_paragraph = true;
-            }
-            if (asHtml) toReplace += "<b>";
-            toReplace += match[1];
-            if (asHtml) toReplace += "</b>";
-            search += "**";
-            search += match[1];
-            search += "**";
-            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_BOLD);
-        }
-        toReplace = "";
-        search = "";
-        if (regex_search(stringToReturn, match, italic_regex)) {
-            if (current_list) {
-                current_list = false;
-                if (asHtml) toReplace += "</ul>";
-            }
-            if (need_paragraph) {
-                if (asHtml) toReplace += "<p>";
-                need_paragraph = false;
-                current_paragraph = true;
-            }
-            if (asHtml) toReplace += "<i>";
-            toReplace += match[1];
-            if (asHtml) toReplace += "</i>";
-            search += "*";
-            search += match[1];
-            search += "*";
-//            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_ITALIC);
-        }
-        toReplace = "";
-        search = "";
-        if (regex_search(stringToReturn, match, list_regex)) {
-            if (!current_list) {
-                current_list = true;
-                if (asHtml) toReplace += "<ul>";
-            }
-            if (asHtml) toReplace += "<li>";
-            toReplace += match[1];
-            if (asHtml) toReplace += "</li>";
-            search += "*  ";
-            search += match[1];
-            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list);
-        }
-        toReplace = "";
-        search = "";
-        if (regex_search(stringToReturn, match, img_regex)) {
-            if (current_list) {
-                current_list = false;
-                stringToReturn += "</ul>";
-            }
-            toReplace +="<img src=\"";
-            toReplace += match[2];
-            toReplace += "\"";
-            toReplace += " alt=\"";
-            toReplace += match[1];
-            toReplace += "\">";
-            search += "![";
-            search += match[1];
-            search += "]";
-            search += "(";
-            search += match[2];
-            search += ")";
-            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list);
-        }
-        toReplace = "";
-        search = "";
-        if (regex_search(stringToReturn, match, url_regex)) {
-            if (current_list) {
-                current_list = false;
-                stringToReturn += "</ul>";
-            }
-            if (need_paragraph) {
-                if (asHtml) toReplace += "<p>";
-                need_paragraph = false;
-                current_paragraph = true;
-            }
-            if (asHtml) toReplace +="<a href=\"";
-            if (asHtml) toReplace += match[2];
-            string url = match[2];
-            if (asHtml) toReplace += "\">";
-            toReplace += match[1];
-            if (asHtml) toReplace += "</a>";
-            search += "[";
-            search += match[1];
-            search += "]";
-            search += "(";
-            search += match[2];
-            search += ")";
-            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_LINK);
-        }
-        toReplace = "";
-        search = "";
-        if (searchHeadersStyle(stringToReturn, match)) {
-            if (current_list) {
-                current_list = false;
-                stringToReturn += "</ul>";
-            }
-            if (regex_search(stringToReturn, match, h3_regex)) {
-                if (asHtml) toReplace += "<h3>";
-                toReplace += match[1];
-                if (asHtml) toReplace += "</h3>";
-                search += "### ";
-                search += match[1];
-                removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_H3);
-            }
-            if (regex_search(stringToReturn, match, h2_regex)) {
-                if (asHtml) toReplace += "<h2>";
-                toReplace += match[1];
-                if (asHtml) toReplace += "</h2>";
-                search += "## ";
-                search += match[1];
-                removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_H@);
-            }
-            if (regex_search(stringToReturn, match, h1_regex)) {
-                if (asHtml) toReplace += "<h1>";
-                toReplace += match[1];
-                if (asHtml) toReplace += "</h1>";
-                search += "# ";
-                search += match[1];
-                removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_H1);
-            }
-        }
-    }
+//    while (regex_search(stringToReturn, match, bold_regex) || regex_search(stringToReturn, match, italic_regex)
+//           || searchHeadersStyle(stringToReturn, match)
+//           || regex_search(stringToReturn, match, img_regex)
+//           || regex_search(stringToReturn, match, list_regex)) {
+//
+//
+//        if (regex_search(stringToReturn, match, italic_regex)) {
+//            if (current_list) {
+//                current_list = false;
+//                if (asHtml) toReplace += "</ul>";
+//            }
+//            if (need_paragraph) {
+//                if (asHtml) toReplace += "<p>";
+//                need_paragraph = false;
+//                current_paragraph = true;
+//            }
+////            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list, PRECISION_ITALIC);
+//        }
+//        toReplace = "";
+//        search = "";
+//        if (regex_search(stringToReturn, match, list_regex)) {
+//            if (!current_list) {
+//                current_list = true;
+//                if (asHtml) toReplace += "<ul>";
+//            }
+//            if (asHtml) toReplace += "<li>";
+//            toReplace += match[1];
+//            if (asHtml) toReplace += "</li>";
+//            search += "*  ";
+//            search += match[1];
+//            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list);
+//        }
+//        toReplace = "";
+//        search = "";
+//        if (regex_search(stringToReturn, match, img_regex)) {
+//            if (current_list) {
+//                current_list = false;
+//                stringToReturn += "</ul>";
+//            }
+//            toReplace +="<img src=\"";
+//            toReplace += match[2];
+//            toReplace += "\"";
+//            toReplace += " alt=\"";
+//            toReplace += match[1];
+//            toReplace += "\">";
+//            search += "![";
+//            search += match[1];
+//            search += "]";
+//            search += "(";
+//            search += match[2];
+//            search += ")";
+//            removedCounterForLine += parseRegex(stringToReturn, search, toReplace, match, list);
+//        }
+//        toReplace = "";
+//        search = "";
+//    }
 
     /*-- Funky stuff to check parity of indexes and string lentghs --*/
     
@@ -373,7 +408,7 @@ void parseLine(string& text, ofxPrecisionTextStructure & output, bool asHtml, ve
     output.removed += removedCounterForLine;
     output.text += stringToReturn;
     
-    return output;
+    return output.outSize;
     
 }
 
