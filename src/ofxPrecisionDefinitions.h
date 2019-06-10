@@ -9,14 +9,17 @@ struct ofxPrecisionTextHyperlink {
 
 
 struct ofxPrecisionTextChar {
+    ofColor color;
     string letter;
     float fontSize;
+    float strokeWidth;
     bool isLineEnd;
     bool isBold;
     bool isItalic;
     bool isLink;
     int isHeading;
     ofRectangle bounds;
+    int index;
 };
 
 struct ofxPrecisionStructure {
@@ -56,6 +59,7 @@ struct ofxPrecisionSettings {
     
     bool markdown;
     float dpi;
+    bool cache;
     
     int fontIndex;
     float headingScale;
@@ -79,6 +83,7 @@ struct ofxPrecisionSettings {
         
         markdown = true;
         dpi = 1.0;
+        cache = true;
         
         fontIndex = 0;
         headingScale = 2;

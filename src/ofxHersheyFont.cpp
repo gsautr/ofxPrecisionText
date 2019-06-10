@@ -86,7 +86,8 @@ void ofxHersheyFont::setFont(int i) {
     if (it == charCache.end()) {
         
         map<int, ofPath> charSet;
-        
+        map<int, int> widths;
+        int height = 0;
         for (int i = 0; i < simplex.size(); i++) {
            
             int asciiValue = i + 32;
@@ -97,7 +98,7 @@ void ofxHersheyFont::setFont(int i) {
             {
                 int x = getSimplex(asciiValue - 32, i, asciiValue - 32,i + 1);
                 int y = getSimplex(asciiValue - 32,i + 1);
-                
+                if (y > height) height = y;
                 
                 if (x != -1) chPath.lineTo(x, y);
                 if (x == -1) {
@@ -109,10 +110,14 @@ void ofxHersheyFont::setFont(int i) {
                 }
             }
             
+            chPath.setFilled(false);
             charSet[i] = chPath;
+            widths[i] = simplex[asciiValue - 32][1];
             
         }
         
+        widthCache[names[fontIndex]] = widths;
+        heightCache[names[fontIndex]] = height;
         charCache[names[fontIndex]] = charSet;
     }
 }
@@ -175,6 +180,8 @@ void ofxHersheyFont::draw(string stringValue, float xPos, float yPos, float str,
 
 	ofPopMatrix();
 }
+
+
 
 void ofxHersheyFont::draw(string stringValue, ofRectangle rectangle, int horizontalAlign, int verticalAlign, float str, ofColor col) {
     
@@ -266,13 +273,16 @@ float ofxHersheyFont::getSimplex(int a, int b, int aa, int bb) {
     return simplex[a][b] + ita;
 }
 
+ofPath ofxHersheyFont::getPath(int i) {
+    return charCache[names[fontIndex]][i - 32];
+}
+
 //--------------------------------------------------------------
 void ofxHersheyFont::drawChar(int asciiValue, float stroke) {
 	
 	ofPath chPath = charCache[names[fontIndex]][asciiValue - 32];
 	chPath.setStrokeColor(color);
 	chPath.setStrokeWidth(stroke);
-	chPath.setFilled(false);
     
     chPath.draw();
 }
@@ -294,7 +304,7 @@ void ofxHersheyFont::setStroke(float s) {
 }
 
 ofRectangle ofxHersheyFont::getBounds(string stringValue, int x, int y) {
-    return ofRectangle(x, y, getWidth(stringValue), getHeight());
+    return ofRectangle(x, y, widthCache[names[fontIndex]][stringValue[0] - 32], heightCache[names[fontIndex]] * scale);
 }
 
 //--------------------------------------------------------------
@@ -317,8 +327,7 @@ float ofxHersheyFont::getWidth(string stringValue){
 //--------------------------------------------------------------
 float ofxHersheyFont::getHeight() {
 	//the height of a capital letter is 21px (scale 1)
-    
-	float stringHeight = (float) 21 * scale;
+	float stringHeight = (float) heightCache[names[fontIndex]] * scale;
 
 	return stringHeight;
 }

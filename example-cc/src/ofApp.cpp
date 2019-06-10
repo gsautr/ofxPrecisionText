@@ -1,14 +1,28 @@
 #include "ofApp.h"
 
-
 //--------------------------------------------------------------
 void ofApp::setup(){
+    t.setup();
+    s.cache = false;
+    s.markdown = false;
+    s.horizontalAlign = 0;
+    s.verticalAlign = 0;
+    s.fontSize = 48;
     
-    ofLog::setAutoSpace(true);
-    ofSetFrameRate(60.0f);
-    
-    doc.setup();
-    input.setup();
+    charBegin = t.charBegin.newListener([this](ofxPrecisionTextChar & ch){
+        
+        float sine = sin( (ofGetElapsedTimef() * 10 ) + ch.index );
+        float y = ofMap(sine, -1, 1, -10, 10 );
+//        ofTranslate(0, y);
+//        ofRotateX(y * 2);
+        ch.color = ofColor(255,0,0);
+//        ofLog() << "B" << ch.color;
+        //        ofLog() << "YO!" << ch.bounds.width;
+    });
+//    charDrawn = t.charBegin.newListener([this](ofxPrecisionTextChar & ch){
+//        ofTranslate(ofRandom( -4, 4), ofRandom(-10, 10));
+//        //        ofLog() << "YO!" << ch.bounds.width;
+//    });
     
 }
 
@@ -19,64 +33,34 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    
     ofBackground(0);
-    string txt = "Hello [link](google.com) [another](fsdfds) ";
-    
-//    string txt;
-//    for (int i = 0; i < 256; i++) {
-//        txt += (char)i;
-//        txt += " ";
-//    }
-    
-    settings.markdown = true;
-    
-    
-    ofRectangle bounds( 100, 100, ofGetWidth() - 200, ofGetHeight()/2 - 200 );
-    
-    doc.draw(txt, bounds, settings);
-    
-    settings.fontSize = 32;
-    settings.markdown = false;
-    
-    bounds.y += ofGetHeight()/2;
-//    input.draw(bounds, settings);
-    
-    
-    
+    t.draw("Hello World", ofPoint(ofGetWidth()/2, ofGetHeight()/2), s);
+    t.clearCache();
 }
 
-
 //--------------------------------------------------------------
-void ofApp::keyPressed(ofKeyEventArgs & e){
-    
-    if (e.key == 'c') doc.copyToClipboard();
-    input.keyPressed(e.key);
+void ofApp::keyPressed(int key){
+
 }
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
+
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y){
+void ofApp::mouseMoved(int x, int y ){
 
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
 
-    doc.dragged(x,y);
-    input.dragged(x,y);
-    
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-    
-    doc.pressed(x,y);
-    input.pressed(x,y);
-    
+
 }
 
 //--------------------------------------------------------------

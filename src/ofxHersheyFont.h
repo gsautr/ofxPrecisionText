@@ -23,6 +23,7 @@ class ofxHersheyFont {
 	public:
 		ofxHersheyFont();
     
+        ofPath getPath(int i);
         void setFont(int i);
         int getNumFonts();
         void setFontList(vector<string> list);
@@ -53,6 +54,8 @@ class ofxHersheyFont {
 
 	private:
         map<string, map<int, ofPath>> charCache;
+        map<string, int> heightCache;
+        map<string, map<int, int>> widthCache;
         vector<vector<int>> simplex;
         map<string, vector<vector<int>>> fonts;
         vector<string> names;
