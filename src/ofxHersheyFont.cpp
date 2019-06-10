@@ -1,21 +1,31 @@
 /*
 *  ofxHersheyFont.cpp
 *
-*  Created by Tobias Zimmer, August 2016.
+*  Branched by Gilbert Sinnott, www.autr.tv, June 2019
+*
+*  + parser for .dhf files (see dhf-parser)
+*  + simplex Hershey font sets (inc. cyrillic, greek, japanese)
+*  + integration w. ofxPrecisionText
+*
+*  ofxHersheyFont originally created by Tobias Zimmer, August 2016.
 *  www.tobiaszimmer.net
 *
-*  Font originally developed by Dr. Allen V. Hershey in 1967.
+*  Fonts originally developed by Dr. Allen V. Hershey in 1967.
 *  Font vectors made available by Paul Bourke.
-*  paulbourke.net/dataformats/hershey/
-*  
-*  A simple single line font for machines like CNC, Lasercutter, ...
-*  Available characters: ASCII codes 32 to 126.
+*  paulbourke.net/dataformats/hershey
 *
 */
 
 #include "ofxHersheyFont.h"
 #include "simplexCharacterSet.h"
+#include "hersheyCharacterSets.h"
 
+void ofxHersheyFont::setFontList(vector<string> list) {
+    names = list;
+}
+vector<string> ofxHersheyFont::getFontList() {
+    return names;
+}
 
 //--------------------------------------------------------------
 ofxHersheyFont::ofxHersheyFont(){
@@ -24,9 +34,92 @@ ofxHersheyFont::ofxHersheyFont(){
     stroke = 1;
     centered = false;
     angle = 0;
+    fontIndex = 0;
+    
+    names = {"default", "gothicita", "symbolic", "scripts", "timesrb", "cyrillic", "markers", "meteorology", "gothitt", "gothiceng", "mathlow", "scriptc", "gothgbt", "gothicger", "mathupp", "timesg", "astrology", "japanese", "timesr", "music", "cyrilc_1", "greek", "rowmans", "rowmand", "timesi", "cursive", "futuram", "gothgrt", "futural", "rowmant", "timesib", "greekc", "greeks"};
+    
+    fonts["default"] = basic;
+    fonts["gothicita"] = gothicita;
+    fonts["symbolic"] = symbolic;
+    fonts["scripts"] = scripts;
+    fonts["timesrb"] = timesrb;
+    fonts["cyrillic"] = cyrillic;
+    fonts["markers"] = markers;
+    fonts["meteorology"] = meteorology;
+    fonts["gothitt"] = gothitt;
+    fonts["gothiceng"] = gothiceng;
+    fonts["mathlow"] = mathlow;
+    fonts["scriptc"] = scriptc;
+    fonts["gothgbt"] = gothgbt;
+    fonts["gothicger"] = gothicger;
+    fonts["mathupp"] = mathupp;
+    fonts["timesg"] = timesg;
+    fonts["astrology"] = astrology;
+    fonts["japanese"] = japanese;
+    fonts["timesr"] = timesr;
+    fonts["music"] = music;
+    fonts["cyrilc_1"] = cyrilc_1;
+    fonts["greek"] = greek;
+    fonts["rowmans"] = rowmans;
+    fonts["rowmand"] = rowmand;
+    fonts["timesi"] = timesi;
+    fonts["cursive"] = cursive;
+    fonts["futuram"] = futuram;
+    fonts["gothgrt"] = gothgrt;
+    fonts["futural"] = futural;
+    fonts["rowmant"] = rowmant;
+    fonts["timesib"] = timesib;
+    fonts["greekc"] = greekc;
+    fonts["greeks"] = greeks;
+    
+    simplex = fonts[names[fontIndex]];
 }
 
 
+void ofxHersheyFont::setFont(int i) {
+    if (i >= names.size()) i = names.size() - 1;
+    if (i < 0) i = 0;
+    fontIndex = i;
+    simplex = fonts[names[fontIndex]];
+    
+    auto it = charCache.find(names[fontIndex]);
+    if (it == charCache.end()) {
+        
+        map<int, ofPath> charSet;
+        
+        for (int i = 0; i < simplex.size(); i++) {
+           
+            int asciiValue = i + 32;
+            
+            ofPath chPath;
+            chPath.moveTo(getSimplex(asciiValue - 32, 2, asciiValue - 32, 3), getSimplex(asciiValue - 32, 3));
+            for (int i = 4; i <= simplex[asciiValue - 32][0] * 2; i += 2)
+            {
+                int x = getSimplex(asciiValue - 32, i, asciiValue - 32,i + 1);
+                int y = getSimplex(asciiValue - 32,i + 1);
+                
+                
+                if (x != -1) chPath.lineTo(x, y);
+                if (x == -1) {
+                    int xx = getSimplex(asciiValue - 32, i + 2, asciiValue - 32, i + 3);
+                    int yy = getSimplex(asciiValue - 32, i + 3);
+                    
+                    chPath.moveTo(xx, yy);
+                    i += 2;
+                }
+            }
+            
+            charSet[i] = chPath;
+            
+        }
+        
+        charCache[names[fontIndex]] = charSet;
+    }
+}
+
+int ofxHersheyFont::getNumFonts() {
+    return names.size();
+}
 //--------------------------------------------------------------
 void ofxHersheyFont::draw(string stringValue, float xPos, float yPos) {
     draw(stringValue, xPos, yPos, stroke, color);
@@ -69,7 +162,7 @@ void ofxHersheyFont::draw(string stringValue, float xPos, float yPos, float str,
 
 				//if character is not available, use questionmark
 				if (asciiValue < 32 || asciiValue > 126) asciiValue = 63;
-
+            
 				//draw the character
 				drawChar(asciiValue, stroke);
 
@@ -176,48 +269,12 @@ float ofxHersheyFont::getSimplex(int a, int b, int aa, int bb) {
 //--------------------------------------------------------------
 void ofxHersheyFont::drawChar(int asciiValue, float stroke) {
 	
-	ofPath chPath;
-    
-//    line.begin();
-
-	//move to first coordinate
-    chPath.moveTo(getSimplex(asciiValue - 32, 2, asciiValue - 32, 3), getSimplex(asciiValue - 32, 3));
-//    line.addVertex(simplex[asciiValue - 32][2], simplex[asciiValue - 32][3]);
-
-	//iterate through points of the character
-	for (int i = 4; i <= simplex[asciiValue - 32][0] * 2; i += 2)
-	{
-		int x = getSimplex(asciiValue - 32, i, asciiValue - 32,i + 1);
-		int y = getSimplex(asciiValue - 32,i + 1);
-        
-        
-        if (x != -1) chPath.lineTo(x, y);
-//        if (x != -1) line.addVertex(x, y);
-
-		//skip -1,-1 value -> equals pen up operation / end of a line
-		//and move to next point
-        if (x == -1) {
-            int xx = getSimplex(asciiValue - 32, i + 2, asciiValue - 32, i + 3);
-            int yy = getSimplex(asciiValue - 32, i + 3);
-            
-            chPath.moveTo(xx, yy);
-//            line.addVertex(simplex[asciiValue - 32][i + 2], simplex[asciiValue - 32][i + 3]);
-			i += 2;
-		}
-	}
-	
-//    line.end();
+	ofPath chPath = charCache[names[fontIndex]][asciiValue - 32];
 	chPath.setStrokeColor(color);
 	chPath.setStrokeWidth(stroke);
 	chPath.setFilled(false);
     
-//    ofEnableAntiAliasing();
     chPath.draw();
-//    line.draw();
-    
-    
-    
-//    ofDisableAntiAliasing();
 }
 
 

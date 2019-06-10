@@ -23,14 +23,21 @@ void ofApp::draw(){
     ofBackground(0);
     string txt = "Hello [link](google.com) [another](fsdfds) som**e**thing to [tertre](fdsf) and **[ffsdf](fdsf)** and **something** else\nPellentesque ultricies, lectus at dapibus aliquam, arcu leo ornare sem, in porta metus dolor ac leo. Sed rutrum laoreet ultricies. Praesent suscipit aliquam malesuada. Nullam orci augue, condimentum cursus nibh a, commodo fermentum urna. Cras non porta metus. \n\nPhasellus condimentum tincidunt odio id accumsan. Cras eget feugiat felis, ut congue ex. Donec vel consectetur ex. \n\nNam quis libero ornare, eleifend tellus sit amet, tincidunt nibh. Suspendisse vitae sapien consequat, tincidunt justo a, venenatis lorem. [Nullam](link) bibendum interdum dolor, ut imperdiet libero vestibulum vel. Proin in augue magna. Morbi eget elit feugiat, convallis ex a, lacinia ante. Curabitur nec lobortis mauris. Aliquam fringilla risus diam. Maecenas dapibus risus sit amet quam pellentesque ultrices., eget condimentum nibh commodo. Proin a tincidunt magna. Suspendisse et mollis velit.";
     
+//    string txt;
+//    for (int i = 0; i < 256; i++) {
+//        txt += (char)i;
+//        txt += " ";
+//    }
+    
     ofRectangle bounds( 100, 100, ofGetWidth() - 200, ofGetHeight()/2 - 200 );
     
     doc.draw(txt, bounds, settings);
     
+    settings.fontSize = 32;
     settings.markdown = false;
     
     bounds.y += ofGetHeight()/2;
-    input.draw(bounds, settings);
+//    input.draw(bounds, settings);
     
     
     
@@ -39,6 +46,8 @@ void ofApp::draw(){
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(ofKeyEventArgs & e){
+    
+    ofLog() << e.key;
     
     if (e.key == 'c') doc.copyToClipboard();
     input.keyPressed(e.key);

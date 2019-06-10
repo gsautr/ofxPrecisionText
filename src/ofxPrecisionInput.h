@@ -5,7 +5,7 @@ class ofxPrecisionInput : public ofxPrecisionDocument {
 private:
     
     string placeholder = "Default";
-    string internalText = "HEljhsdflkfjsdf ";
+    string internalText = "Hello world hello world hello world";
 public:
     
     ofxPrecisionStructure structure;
@@ -21,8 +21,8 @@ public:
         
         structure = ofxPrecisionDocument::draw(internalText, boundingBox, settings, false);
         
-        int a = indexA;
-        int b = indexB;
+        int a = (pos[0] < pos[1]) ? pos[0] : pos[1];
+        int b = (pos[0] >= pos[1]) ? pos[0] : pos[1];
         
         int xx = structure.bounds.x;
         int yy = structure.bounds.y;
@@ -30,8 +30,8 @@ public:
         ofPushMatrix();
         ofTranslate(xx,yy);
         
-        ofSetColor(255,0,0);
-        ofSetLineWidth(4);
+        ofSetColor(255);
+        ofSetLineWidth(2);
         ofNoFill();
         bool l = (a==structure.chars.size());
         ofxPrecisionTextChar ch = structure.chars[(l) ? a - 1 : a];
@@ -45,13 +45,57 @@ public:
     
     void keyPressed(int ch) {
         
-        if (ch == '\n') {
-            internalText.insert(indexA, "\n");
+        int & a = (pos[0] < pos[1]) ? pos[0] : pos[1];
+        int & b = (pos[0] >= pos[1]) ? pos[0] : pos[1];
+        
+        if(ch == OF_KEY_BACKSPACE || ch == OF_KEY_DEL){
+            int size = 1;
+            if (a == b) {
+                if (a == 0) {
+                    b = a;
+                } else {
+                    a -= 1;
+                    b = a;
+                }
+            } else {
+                size = b - a;
+                b = a;
+            }
+            internalText = internalText.erase(a, size);
+        } else if (ch == OF_KEY_LEFT){
+            if (a == b) {
+                a -= 1;
+                b = a;
+            } else {
+                b = a;
+            }
+            
+        } else if (ch == OF_KEY_RIGHT){
+            if (a == b) {
+                a += 1;
+                b = a;
+            } else {
+                a = b;
+            }
+            
+        } else if (ch == OF_KEY_RETURN){
+            insertChar('\n');
         } else {
-            internalText.insert(indexA, ofToString((char)ch));
+            if(ch == ' ' ) insertChar(' ');
+            if(ch >= '!' && ch <= '~') insertChar(ch);
+            if(ch >= '0' && ch <= '9') insertChar(ch);
+            if (ch == '.') insertChar('.');
+            if (ch == '-') insertChar('-');
         }
-        indexA += 1;
-        indexB = indexA;
+    }
+    void insertChar(int c) {
+        
+        int & a = (pos[0] < pos[1]) ? pos[0] : pos[1];
+        int & b = (pos[0] >= pos[1]) ? pos[0] : pos[1];
+        
+        internalText.insert(a, ofToString((char)c));
+        a += 1;
+        b = a;
     }
     
     void setup() {

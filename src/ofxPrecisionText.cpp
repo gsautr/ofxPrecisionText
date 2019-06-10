@@ -24,8 +24,8 @@ string ofxPrecisionText::getFboKey(string text) {
     
     /*-- Get unique hash for FBO cache --*/
     
-    string key = fontList[s.fontIndex] + ofToString(s.fontSize) + ofToString(s.strokeColor.r) + ofToString(s.strokeColor.g) + ofToString(s.strokeColor.b) + ofToString(s.strokeColor.a) + ofToString(s.numSamples) + text + ofToString(s.horizontalAlign) + ofToString(s.lineHeight) + ofToString(s.pixelAligned) + ofToString(s.letterSpacing);
-    if (s.fontIndex == 0 ) key += ofToString(s.strokeWidth);
+    string key = fontList[s.fontIndex] + ofToString(s.fontSize) + ofToString(s.strokeColor.r) + ofToString(s.strokeColor.g) + ofToString(s.strokeColor.b) + ofToString(s.strokeColor.a) + ofToString(s.numSamples) + text + ofToString(s.horizontalAlign) + ofToString(s.lineHeight) + ofToString(s.pixelAligned) + ofToString(s.letterSpacing) + ofToString(s.dpi);
+    if (s.fontIndex < hershey.getNumFonts()) key += ofToString(s.strokeWidth);
     return key;
 }
 
@@ -33,8 +33,12 @@ string ofxPrecisionText::defineFont(float fSize) {
     
     /*-- Loads TTF to cache and returns font cache key --*/
     
-    if (s.fontIndex == 0) return "Hershey";
     string fontName = fontList[s.fontIndex];
+    if (s.fontIndex < hershey.getNumFonts()) {
+        hershey.setFont(s.fontIndex);
+        return fontName;
+    }
+    
     string fontKey = fontName + ofToString( fSize );
     auto it = fontCache.find(fontKey);
     if (it == fontCache.end()) {
@@ -98,13 +102,13 @@ ofRectangle ofxPrecisionText::getBounds(string text, float fSize, float x, float
     ofRectangle b;
     
     
-    if (s.fontIndex == 0) {
+    if (s.fontIndex < hershey.getNumFonts()) {
         hershey.setScale( (1.0 / 31.0) * fSize );
         b = hershey.getBounds(text, x, y);
     } else {
         string fontKey = defineFont(fSize);
         b = fontCache[fontKey].getStringBoundingBox(text, x, y);
-        b.y = y + (s.fontSize * 1);
+        b.y = y + (fSize * 1);
     }
     
     return b;
@@ -116,10 +120,8 @@ void ofxPrecisionText::drawString(string text, float fSize, float xx, float yy) 
         yy = (int)yy;
     }
     
-    //    float spc = ((1.0 - lineHeight) / 2) * s.fontSize;
-    
-    if (s.fontIndex == 0) {
-        hershey.setScale( ( 1.0 / 31.0 ) * fSize );
+    if (s.fontIndex < hershey.getNumFonts()) {
+        hershey.setScale( ( 1.0 / 31.0 ) * (fSize) );
         hershey.draw(text, xx, yy + getBounds(text, fSize, 0,0).height);
     } else {
         string fontKey = defineFont(fSize);
@@ -205,7 +207,7 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
         
         string l = ofToString(text[i]);
         ch.letter = l;
-        ch.bounds = getBounds(l, ch.fontSize, 0,0);
+        ch.bounds = getBounds(l, ch.fontSize * s.dpi, 0,0);
         chars.push_back(ch);
         outputString += l;
         
@@ -213,7 +215,7 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
     
     /*-- Define positions and new lines --*/
     
-    int linePix = (int)(s.fontSize * s.lineHeight);
+    int linePix = (int)(s.fontSize * s.lineHeight * s.dpi);
     float iX = 0;
     float iY = 0;
     float maxWidth = 0;
@@ -233,10 +235,10 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
                 int ii = (iChars > 0) ? iChars - 1 : 0;
                 ofxPrecisionTextChar prev = chars[ii];
                 hershey.setScale( (1.0 / 31.0) * prev.fontSize);
-                linePix = (int)(prev.fontSize * (s.lineHeight) );
+                linePix = (int)(prev.fontSize * s.lineHeight * s.dpi );
             }
-            ch.bounds = getBounds(ch.letter, ch.fontSize, iX, iY);
-            ch.bounds.height = ch.fontSize * s.lineHeight;
+            ch.bounds = getBounds(ch.letter, ch.fontSize * s.dpi, iX, iY);
+            ch.bounds.height = ch.fontSize * s.lineHeight * s.dpi;
             if (ch.letter == "\n") {
                 iY += linePix;
                 iX = 0;
@@ -254,8 +256,8 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
             
             for (int i = iChars - w.size(); i < iChars; i++) {
                 ofxPrecisionTextChar & ch = chars[i];
-                linePix = (int)(ch.fontSize * s.lineHeight);
-                ch.bounds.x -= xx + getBounds("_", ch.fontSize, 0, 0).width + s.letterSpacing;
+                linePix = (int)(ch.fontSize * s.lineHeight * s.dpi);
+                ch.bounds.x -= xx + getBounds("_", ch.fontSize * s.dpi, 0, 0).width + s.letterSpacing;
                 ch.bounds.y += linePix;
             }
             
@@ -345,7 +347,7 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
     
     
     
-    string fontKey = defineFont(s.fontSize);
+    string fontKey = defineFont(s.fontSize * s.dpi);
     ofxPrecisionStructure & structure = structCache[getFboKey(text)];
     
     
@@ -359,10 +361,10 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
                 ofSetColor( (ch.isLink) ? s.linkColor : s.strokeColor);
                 hershey.setScale( (1.0 / 31.0) * ch.fontSize);
                 hershey.setColor( (ch.isLink) ? s.linkColor : s.strokeColor );
-                hershey.setStroke( (ch.isBold) ? ofClamp(s.strokeWidth + (0.75 * dpi), 0, 2 * dpi) : s.strokeWidth );
+                hershey.setStroke( (ch.isBold) ? s.strokeWidth * s.boldWidth * s.dpi : s.strokeWidth * s.dpi );
                 hershey.setItalic( ch.isItalic , 4 );
                 
-                drawString(ch.letter, ch.fontSize, ch.bounds.x, ch.bounds.y);
+                drawString(ch.letter, ch.fontSize * s.dpi, ch.bounds.x, ch.bounds.y);
                 ofNoFill();
                 ofSetLineWidth(1);
                 
@@ -387,8 +389,10 @@ void ofxPrecisionText::flagRedraw() {
 
 void ofxPrecisionText::setup(string fontLocation) {
     
+    
+    fontList = hershey.getFontList();
     shouldRedraw = false;
-    dpi = ((ofAppGLFWWindow*)ofGetWindowPtr())->getPixelScreenCoordScale();
+    
     ofxPrecisionSettings settings;
     s = settings;
     
@@ -404,7 +408,6 @@ void ofxPrecisionText::setup(string fontLocation) {
     ofTrueTypeFont::setGlobalDpi(72);
     
     dir.listDir();
-    fontList.push_back("Hershey");
     for (auto & f: dir.getFiles()) {
         ofLogNotice("[ofxPrecisionText]") << "Adding TTF " << f.path();
         fontList.push_back(f.path());
@@ -414,6 +417,7 @@ void ofxPrecisionText::setup(string fontLocation) {
 
 
 void ofxPrecisionText::clearFboCache() {
+    for (auto & f : fboCache) delete f.second;
     fboCache.clear();
 }
 

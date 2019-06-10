@@ -11,11 +11,11 @@ public:
     float pressTimestamp;
     int pressCounter;
     float pressTimeLimit;
-    int indexA, indexB;
+    vector<int> pos;
     ofPoint lastPress;
     
     void copyToClipboard() {
-        if (indexA != indexB) ofGetWindowPtr()->setClipboardString(clipboard);
+        if (pos[0] != pos[1]) ofGetWindowPtr()->setClipboardString(clipboard);
     }
     ofRectangle getPreciseRect(int i) {
         
@@ -35,7 +35,7 @@ public:
     
     void dragged(int x, int y){
         
-        indexA = getNearestCharacter(x, y);
+        pos[0] = getNearestCharacter(x, y);
         
     }
     
@@ -72,8 +72,9 @@ public:
         
         if (pressCounter == 0) pressTimestamp = time;
         
-        indexA = aa;
-        indexB = bb;
+        pos[0] = aa;
+        pos[1] = bb;
+        
         lastPress.x = x;
         lastPress.y = y;
         
@@ -119,21 +120,10 @@ public:
         
         structure = ofxPrecisionText::draw(text, boundingBox, settings, false);
         
-        
-        //            ofSetColor(255,0,0);
-        //            ofSetLineWidth(4);
-        //            ofNoFill();
-        //            bool l = (a==structure.chars.size());
-        //            ofxPrecisionTextChar ch = structure.chars[(l) ? a - 1 : a];
-        //            ofVec3f tl = (a < structure.chars.size()) ? ch.bounds.getTopLeft() : ch.bounds.getTopRight();
-        //            ofVec3f br = (a < structure.chars.size()) ? ch.bounds.getBottomLeft() : ch.bounds.getBottomRight();
-        //            ofDrawLine(tl, br);
-
-        
-        if (indexA != indexB) {
+        if (pos[0] != pos[1]) {
             
-            int a = indexA;
-            int b = indexB;
+            int a = (pos[0] < pos[1]) ? pos[0] : pos[1];
+            int b = (pos[0] >= pos[1]) ? pos[0] : pos[1];
             
             int xx = structure.bounds.x;
             int yy = structure.bounds.y;
@@ -141,8 +131,6 @@ public:
             ofPushMatrix();
             ofTranslate(xx,yy);
             
-            a = (indexA < indexB) ? indexA : indexB;
-            b = (indexA <= indexB) ? indexB : indexA;
             
             clipboard = "";
             for (int i = a; i < b; i++) {
@@ -162,6 +150,8 @@ public:
         
         ofxPrecisionText::setup();
         pressTimestamp = ofGetElapsedTimef();
+        pos.push_back(0);
+        pos.push_back(0);
         pressCounter = 0;
         pressTimeLimit = 1;
     }

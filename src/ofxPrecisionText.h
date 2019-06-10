@@ -1,111 +1,18 @@
+/*
+ *  ofxPrecisionText
+ *
+ *  Created by Gilbert Sinnott, www.autr.tv, June 2019
+ *
+ */
+
 #pragma once
 #include "ofxHersheyFont.h"
-
-
-struct ofxPrecisionTextHyperlink {
-    int start;
-    int end;
-    string url;
-};
-
-
-struct ofxPrecisionTextChar {
-    string letter;
-    float fontSize;
-    bool isLineEnd;
-    bool isBold;
-    bool isItalic;
-    bool isLink;
-    int isHeading;
-    ofRectangle bounds;
-};
-
-struct ofxPrecisionStructure {
-    
-    vector<int> h1;
-    vector<int> h2;
-    vector<int> h3;
-    vector<int> italic;
-    vector<int> bold;
-    vector<ofxPrecisionTextHyperlink> links;
-    
-    string text;
-    int inSize;
-    int outSize;
-    int removed;
-    
-    ofRectangle bounds;
-    vector<ofxPrecisionTextChar> chars;
-};
-
-struct ofxPrecisionTextRegex {
-    string toBeReplaced;
-    int originalStart;
-    int size;
-    int start;
-    int end;
-    string match;
-    int type;
-};
-
-
-#include "parseMarkdown.h"
-
-
-struct ofxPrecisionSettings {
-    
-    bool markdown;
-    
-    int fontIndex;
-    float headingScale;
-    
-    ofColor strokeColor;
-    ofColor linkColor;
-    
-    bool pixelAligned;
-    int numSamples;
-    
-    float fontSize;
-    float lineHeight;
-    float letterSpacing;
-    float strokeWidth;
-    
-    int horizontalAlign;
-    int verticalAlign;
-    
-    ofxPrecisionSettings() {
-        
-        markdown = true;
-        
-        fontIndex = 0;
-        headingScale = 2;
-        
-        strokeColor = ofColor(255);
-        linkColor = ofColor(0,255,255);
-        
-        pixelAligned = false;
-#ifdef TARGET_RASPBERRY_PI
-        numSamples = 0;
-#else
-        numSamples = 8;
-#endif
-        
-        fontSize = 14;
-        strokeWidth = 1.2;
-        lineHeight = 1;
-        letterSpacing = 0;
-        
-        horizontalAlign = -1;
-        verticalAlign = 1;
-    }
-};
-
+#include "ofxPrecisionDefinitions.h"
 
 class ofxPrecisionText {
 private:
     
     ofxPrecisionSettings s;
-    float dpi;
     int fboType;
     bool samplesChanged;
     bool shouldRedraw;

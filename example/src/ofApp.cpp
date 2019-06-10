@@ -19,6 +19,8 @@ void ofApp::setup(){
     ofLog::setAutoSpace(true);
     ofSetFrameRate(60.0f);
     
+    
+    
 }
 
 //--------------------------------------------------------------
@@ -54,17 +56,13 @@ void ofApp::draw(){
     D.setPosition( D.getPosition() * screenDpi );
     E.setPosition( E.getPosition() * screenDpi );
     
+    ofxPrecisionSettings s;
     
-    ofSetColor(255);
-    text.setColor(ofColor(255));
-    text.setFont(fontIndex);
-    text.setLineHeight(lineHeight);
-    
-    text.setStroke(fontStroke);
+    s.dpi = screenDpi;
     
     ofPoint point = B.getCenter();
     
-    vector<ofxPrecisionTextStructure> fboRects;
+    vector<ofxPrecisionStructure> fboRects;
     
     ofSetLineWidth(1.5);
     ofSetColor(0,255,255);
@@ -74,24 +72,34 @@ void ofApp::draw(){
     ofDrawLine(B.getLeft(), B.getCenter().y, B.getRight(), B.getCenter().y);
     ofDrawLine(B.getCenter().x, B.getTop(), B.getCenter().x, B.getBottom());
     ofNoFill();
-    text.setFontSize(fontSize);
     
-    fboRects.push_back( text.draw("# of**Point**", ofPoint(B.x, 100 * screenDpi), 1, 0) );
-    fboRects.push_back( text.draw("# of**Rectangle**", ofPoint(A.x, 100 * screenDpi), 1, 0) );
+    s.strokeColor = ofColor(255);
+    s.fontIndex = fontIndex;
+    s.lineHeight = lineHeight;
+    s.strokeWidth = fontStroke;
+    s.fontSize = fontSize;
+    s.horizontalAlign = 1;
+    s.verticalAlign = 0;
+    
+    fboRects.push_back( text.draw("# of**Point**", ofPoint(B.x, 100 * screenDpi), s) );
+    fboRects.push_back( text.draw("# of**Rectangle**", ofPoint(A.x, 100 * screenDpi), s) );
+    fboRects.push_back( text.draw("# ofx**PrecisionText**", ofPoint(D.x, 100 * screenDpi), s) );
 
-    fboRects.push_back( text.draw("Hello World", point, horizontalAlign , verticalAlign) );
-    fboRects.push_back( text.draw("Hello World", C, horizontalAlign , verticalAlign) );
+    s.horizontalAlign = horizontalAlign;
+    s.verticalAlign = verticalAlign;
+    
+    fboRects.push_back( text.draw("Hello World", point, s) );
+    fboRects.push_back( text.draw("Hello World", C, s) );
 
 
-    fboRects.push_back( text.draw("Nulla _facilisis_ euismod risus, eget **elementum** tortor pulvinar vel. Donec at ultrices mi.\n# Curabitur\nfringilla euismod luctus. Integer sem est, euismod cursus justo in, *placerat* lacinia magna. [Suspendisse](ggogle.com) purus enim, **posuere**\nvitae lobortis eget, convallis eu tortor. \n# Class\naptent taciti sociosqu ad litora torquent per [conubia](hello) nostra, per [inceptos](fsdfds.com) himenaeos.", A, horizontalAlign , verticalAlign) );
+    fboRects.push_back( text.draw("Nulla *facilisis* euismod risus, eget **elementum** tortor pulvinar vel. Donec at ultrices mi.\n# Curabitur\nfringilla euismod luctus. Integer sem est, euismod cursus justo in, *placerat* lacinia magna. [Suspendisse](ggogle.com) purus enim, **posuere**\nvitae lobortis eget, convallis eu tortor. \n# Class\naptent taciti sociosqu ad litora torquent per [conubia](hello) nostra, per [inceptos](fsdfds.com) himenaeos.", A, s) );
     
     
-    text.setStroke(1.2);
-    text.setFont(0);
+    s.strokeWidth = 1.2;
+    s.fontIndex = 0;
     
-    fboRects.push_back( text.draw("# ofx**PrecisionText**", ofPoint(D.x, 100 * screenDpi), 1, 0) );
     
-    text.setLineHeight(2);
+    s.lineHeight = 2;
     
     string outputA = "";
     
@@ -99,7 +107,7 @@ void ofApp::draw(){
     outputA += "\nFont Size: **" + ofToString(fontSize) + "**";
     outputA += "\nFont Stroke: **" + ofToString(fontStroke) + "**";
     outputA += "\nLine Height: **" + ofToString(lineHeight) + "**";
-    outputA += "\nFBO Samples: **" + ofToString(text.numSamples) + "**";
+//    outputA += "\nFBO Samples: **" + ofToString(numSamples) + "**";
     outputA += "\nVert Align: **" + ofToString(verticalAlign) + "**";
     outputA += "\nHorz Align: **" + ofToString(horizontalAlign) + "**";
     
@@ -111,9 +119,12 @@ void ofApp::draw(){
     outputB += "\nE/R: -/+ **FBO Samples**";
     outputB += "\nArrow Keys: **Vert/Horz Align**";
     
-    text.draw(outputA, D, -1, 1);
-    text.setColor(ofColor(0,255,255));
-    text.draw(outputB, E, -1, 1);
+    s.horizontalAlign = -1;
+    s.verticalAlign = 1;
+    
+    text.draw(outputA, D, s);
+    s.strokeColor = ofColor(0,255,255);
+    text.draw(outputB, E, s);
     
     ofNoFill();
     ofSetColor(0,255,255, 50);
@@ -128,15 +139,17 @@ void ofApp::draw(){
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
     
-    if (key == ' ') text.pixelAligned = !text.pixelAligned;
+//    if (key == ' ') {
+//        text.pixelAligned = !text.pixelAligned;
+//    }
     
     if (key == 'b') text.clearFboCache();
 
     if (key == 'a') fontStroke -= 0.2;
     if (key == 's') fontStroke += 0.2;
     
-    if (key == 'c') text.letterSpacing -= 0.25;
-    if (key == 'v') text.letterSpacing += 0.25;
+//    if (key == 'c') text.letterSpacing -= 0.25;
+//    if (key == 'v') text.letterSpacing += 0.25;
     
     if (key == 'z') fontIndex -= 1;
     if (key == 'x') fontIndex += 1;
@@ -148,8 +161,11 @@ void ofApp::keyPressed(int key){
     if (key == 'd') lineHeight -= 0.05;
     if (key == 'f') lineHeight += 0.05;
     
-    if (key == 'e') { text.setFboSamples(text.numSamples - 1); }
-    if (key == 'r') { text.setFboSamples(text.numSamples + 1); }
+    //    if (key == 'e') { text.setFboSamples(text.numSamples - 1); }
+    //    if (key == 'r') { text.setFboSamples(text.numSamples + 1); }
+    
+    if (key == 'e') { screenDpi -= 0.5; }
+    if (key == 'r') { screenDpi += 0.5; }
     
     
     if (key == OF_KEY_LEFT && horizontalAlign > -1) horizontalAlign -= 1;
@@ -160,7 +176,7 @@ void ofApp::keyPressed(int key){
     if (key == 'q') fontSize -= 0.5;
     if (key == 'w') fontSize += 0.5;
     key -= 49;
-    if (key >= 0 && key <= 9) fontIndex = key;
+//    if (key >= 0 && key <= 9) fontIndex = key;w
     
     
 }
