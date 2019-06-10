@@ -143,7 +143,7 @@ void ofApp::keyPressed(int key){
 //        text.pixelAligned = !text.pixelAligned;
 //    }
     
-    if (key == 'b') text.clearFboCache();
+    if (key == 'b') text.clearCache();
 
     if (key == 'a') fontStroke -= 0.2;
     if (key == 's') fontStroke += 0.2;

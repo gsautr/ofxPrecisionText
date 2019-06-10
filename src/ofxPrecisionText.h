@@ -21,14 +21,13 @@ private:
     
     vector<string> splitString(int fromChar, string text, vector<int>);
     
-    bool allocateFbo(string fboKey, string text, ofRectangle boundingBox, bool isPoint);
-    
     bool hasLink(vector<ofxPrecisionTextHyperlink> links, int i, ofxPrecisionTextHyperlink & link);
     bool hasIndex(vector<int> indexes, int i);
     vector<int> regexReplace(string & text, string reg);
     
     std::map<string, ofxPrecisionStructure> structCache;
     std::map<string, ofFbo *> fboCache;
+    std::map<string, ofTexture> texCache;
     std::map<string, ofTrueTypeFont> fontCache;
     std::map<string, string> markdownCache;
     
@@ -47,7 +46,7 @@ public:
     /*-- Force redraw on FBO cache --*/
     
     void flagRedraw();
-    void clearFboCache();
+    void clearCache();
     
     /*-- Setup w. optional TTFs --*/
     

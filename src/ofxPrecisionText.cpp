@@ -5,20 +5,6 @@
 
 
 
-bool ofxPrecisionText::allocateFbo(string fboKey, string text, ofRectangle boundingBox, bool isPoint) {
-    
-    auto it = fboCache.find(fboKey);
-    if (it == fboCache.end()) {
-        ofFbo * fbo = new ofFbo();
-        structCache[fboKey] = generateStructure(text, boundingBox, true, isPoint);;
-        fbo->allocate(structCache[fboKey].bounds.width, structCache[fboKey].bounds.height, fboType, s.numSamples);
-        ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << s.numSamples << " samples, " << structCache[fboKey].bounds.width << " x " << structCache[fboKey].bounds.height;
-        fboCache[fboKey] = fbo;
-        return true;
-    } else {
-        return false;
-    }
-}
 
 string ofxPrecisionText::getFboKey(string text) {
     
@@ -151,12 +137,14 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
     /*-- Check for cached markdown --*/
     
     if (s.markdown) {
-        auto it = fboCache.find(text);
-        if (it == fboCache.end()) {
+        auto it = markdownCache.find(text);
+        if (it == markdownCache.end()) {
+            ofLog() << "[ofxPrecisionText] Parsing markdown";
             structure = parseMarkdown(text, false);
             markdownCache[text] = structure.text;
         }
         
+        ofLog() << "[ofxPrecisionText] Returning markdown";
         text = markdownCache[text];
     }
     
@@ -338,8 +326,6 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
     structure.bounds.height = iY + linePix;
     structure.chars = chars;
     
-    ofLog() << structure.bounds;
-    
     return structure;
 }
 
@@ -416,9 +402,9 @@ void ofxPrecisionText::setup(string fontLocation) {
 }
 
 
-void ofxPrecisionText::clearFboCache() {
-    for (auto & f : fboCache) delete f.second;
-    fboCache.clear();
+void ofxPrecisionText::clearCache() {
+//    for (auto & f : texCache) delete f.second;
+    texCache.clear();
 }
 
 ofxPrecisionStructure ofxPrecisionText::draw(string text, glm::vec3 originPoint, ofxPrecisionSettings settings) {
@@ -446,39 +432,27 @@ ofxPrecisionStructure ofxPrecisionText::draw(string text, ofRectangle boundingBo
     string fboKey = getFboKey(text);
     string key = getFboKey(text);
     
-//    if (allocateFbo( key, text, boundingBox, isPoint ) || shouldRedraw) {
-//
-//        ofLog() << "DRAW";
-//        fboCache[key]->begin();
-//        ofClear(255,0);
-//        ofSetColor(255);
-//        ofPushMatrix();
-//        string textCopy = text;
-//        drawFbo(textCopy, boundingBox, false, isPoint);
-//        ofPopMatrix();
-//        fboCache[key]->end();
-//        shouldRedraw = false;
-//    }
     
-    
-    auto it = fboCache.find(fboKey);
-    if (it == fboCache.end()) {
+    auto it = texCache.find(fboKey);
+    if (it == texCache.end()) {
         ofFbo * fbo = new ofFbo();
+        
         structCache[fboKey] = generateStructure(text, boundingBox, true, isPoint);;
         fbo->allocate(structCache[fboKey].bounds.width, structCache[fboKey].bounds.height, fboType, s.numSamples);
         ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << s.numSamples << " samples, " << structCache[fboKey].bounds.width << " x " << structCache[fboKey].bounds.height;
-        fboCache[fboKey] = fbo;
         
-        
-        
-        fboCache[fboKey]->begin();
+        fbo->begin();
         ofClear(255,0);
         ofSetColor(255);
         ofPushMatrix();
         drawFbo(text, boundingBox, false, isPoint);
         ofPopMatrix();
-        fboCache[fboKey]->end();
+        fbo->end();
         shouldRedraw = false;
+        
+        texCache[fboKey] = fbo->getTexture();
+        
+        delete fbo;
         
     }
     
@@ -507,7 +481,7 @@ ofxPrecisionStructure ofxPrecisionText::draw(string text, ofRectangle boundingBo
     }
     
     ofSetColor(255);
-    fboCache[key]->draw(structCache[key].bounds);
+    texCache[key].draw(structCache[key].bounds);
     return structCache[key];
     
 }
