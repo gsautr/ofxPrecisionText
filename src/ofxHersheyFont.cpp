@@ -109,6 +109,7 @@ void ofxHersheyFont::setFont(int i) {
                 }
             }
             
+            chPath.setFilled(false);
             charSet[i] = chPath;
             
         }
@@ -175,6 +176,8 @@ void ofxHersheyFont::draw(string stringValue, float xPos, float yPos, float str,
 
 	ofPopMatrix();
 }
+
+
 
 void ofxHersheyFont::draw(string stringValue, ofRectangle rectangle, int horizontalAlign, int verticalAlign, float str, ofColor col) {
     
@@ -266,13 +269,16 @@ float ofxHersheyFont::getSimplex(int a, int b, int aa, int bb) {
     return simplex[a][b] + ita;
 }
 
+ofPath ofxHersheyFont::getPath(int i) {
+    return charCache[names[fontIndex]][i - 32];
+}
+
 //--------------------------------------------------------------
 void ofxHersheyFont::drawChar(int asciiValue, float stroke) {
 	
 	ofPath chPath = charCache[names[fontIndex]][asciiValue - 32];
 	chPath.setStrokeColor(color);
 	chPath.setStrokeWidth(stroke);
-	chPath.setFilled(false);
     
     chPath.draw();
 }

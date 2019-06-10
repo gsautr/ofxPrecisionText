@@ -179,6 +179,7 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
         ch.isLineEnd = false;
         ch.isBold = isBold;
         ch.isItalic = isItalic;
+        ch.index = i;
         
         if (isH1) ch.isHeading += 1;
         if (isH2) ch.isHeading += 2;
@@ -192,6 +193,8 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
         
         ofxPrecisionTextHyperlink link;
         if (hasLink(structure.links, i, link)) ch.isLink = true;
+        
+        ch.color = (ch.isLink) ? s.linkColor : s.strokeColor;
         
         string l = ofToString(text[i]);
         ch.letter = l;
@@ -343,14 +346,45 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
             
             if ( int(ch.letter[0]) != 10 && int(ch.letter[0]) != 0 ) {
                 
+                
+                
+                
+                
+                float  scale = ( 1.0 / 31.0 ) * (ch.fontSize * s.dpi);
+                int xPos = ch.bounds.x;
+                int yPos = ch.bounds.y;
+                int width = ch.bounds.getWidth();
+                int height = ch.bounds.getHeight();
+                yPos += ( height / 2 ) + ( (21 * scale) / 2 );
+                ofPushMatrix();
+                ofTranslate(xPos, yPos );
+                ofScale(scale, -scale);
+//                ofLog() << "A" << ch.color;
+                
+                ofNotifyEvent(charBegin, ch);
+                
+                ofPath p = hershey.getPath(ch.letter[0]);
+                p.setStrokeColor((ch.isLink) ? s.linkColor : s.strokeColor );
+                p.setStrokeWidth( (ch.isBold) ? s.strokeWidth * s.boldWidth * s.dpi : s.strokeWidth * s.dpi);
                 ofFill();
                 ofSetColor( (ch.isLink) ? s.linkColor : s.strokeColor);
                 hershey.setScale( (1.0 / 31.0) * ch.fontSize);
-                hershey.setColor( (ch.isLink) ? s.linkColor : s.strokeColor );
+                hershey.setColor( ch.color );
                 hershey.setStroke( (ch.isBold) ? s.strokeWidth * s.boldWidth * s.dpi : s.strokeWidth * s.dpi );
                 hershey.setItalic( ch.isItalic , 4 );
+
+                p.draw(0,0);
                 
-                drawString(ch.letter, ch.fontSize * s.dpi, ch.bounds.x, ch.bounds.y);
+                ofNotifyEvent(charEnd, ch);
+                
+                ofPopMatrix();
+                ofPopMatrix();
+                
+//                ofNoFill();
+//                ofDrawRectangle(ch.bounds);
+                
+                
+//                drawString(ch.letter, ch.fontSize * s.dpi, ch.bounds.x, ch.bounds.y);
                 ofNoFill();
                 ofSetLineWidth(1);
                 
@@ -428,33 +462,39 @@ ofxPrecisionStructure ofxPrecisionText::draw(string text, int x, int y, int widt
 ofxPrecisionStructure ofxPrecisionText::draw(string text, ofRectangle boundingBox, ofxPrecisionSettings settings, bool isPoint) {
     
     s = settings;
-    
     string fboKey = getFboKey(text);
     string key = getFboKey(text);
     
+//    if (settings.cache) {
     
-    auto it = texCache.find(fboKey);
-    if (it == texCache.end()) {
-        ofFbo * fbo = new ofFbo();
         
-        structCache[fboKey] = generateStructure(text, boundingBox, true, isPoint);;
-        fbo->allocate(structCache[fboKey].bounds.width, structCache[fboKey].bounds.height, fboType, s.numSamples);
-        ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << s.numSamples << " samples, " << structCache[fboKey].bounds.width << " x " << structCache[fboKey].bounds.height;
         
-        fbo->begin();
-        ofClear(255,0);
-        ofSetColor(255);
-        ofPushMatrix();
-        drawFbo(text, boundingBox, false, isPoint);
-        ofPopMatrix();
-        fbo->end();
-        shouldRedraw = false;
+        auto it = texCache.find(fboKey);
+        if (it == texCache.end()) {
+            ofFbo * fbo = new ofFbo();
+            
+            structCache[fboKey] = generateStructure(text, boundingBox, true, isPoint);
+            fbo->allocate(structCache[fboKey].bounds.width, structCache[fboKey].bounds.height, fboType, s.numSamples);
+            ofLogNotice("[ofxPrecisionText]") << "Adding FBO with " << s.numSamples << " samples, " << structCache[fboKey].bounds.width << " x " << structCache[fboKey].bounds.height;
+            
+            fbo->begin();
+            ofClear(255,0);
+            ofSetColor(255);
+            ofPushMatrix();
+            drawFbo(text, boundingBox, false, isPoint);
+            ofPopMatrix();
+            fbo->end();
+            shouldRedraw = false;
+            
+            texCache[fboKey] = fbo->getTexture();
+            
+            delete fbo;
+            
+        }
         
-        texCache[fboKey] = fbo->getTexture();
-        
-        delete fbo;
-        
-    }
+//    } else {
+//        structCache[fboKey] = generateStructure(text, boundingBox, true, isPoint);
+//    }
     
     ofxPrecisionStructure & structure = structCache[key];
     

@@ -23,6 +23,7 @@ class ofxHersheyFont {
 	public:
 		ofxHersheyFont();
     
+        ofPath getPath(int i);
         void setFont(int i);
         int getNumFonts();
         void setFontList(vector<string> list);
