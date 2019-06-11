@@ -6,24 +6,44 @@
 
 
 
+<<<<<<< HEAD
 string ofxPrecisionText::getFboKey(string text) {
     
     /*-- Get unique hash for FBO cache --*/
     
     string key = fontList[s.fontIndex];
+=======
+string ofxPrecisionText::getTextureKey(string text) {
+    
+    /*-- Get unique hash for Texture cache --*/
+    
+    string key = text;
+    key += fontList[s.fontIndex];
+>>>>>>> 7a15e6f0a5bb267307220c953e3624aa67f97b16
     key += ofToString(s.fontSize);
     key += ofToString(s.strokeColor.r);
     key += ofToString(s.strokeColor.g);
     key += ofToString(s.strokeColor.b);
     key += ofToString(s.strokeColor.a);
+<<<<<<< HEAD
     key += ofToString(s.numSamples);
     key += text;
+=======
+>>>>>>> 7a15e6f0a5bb267307220c953e3624aa67f97b16
     key += ofToString(s.horizontalAlign);
     key += ofToString(s.lineHeight);
     key += ofToString(s.pixelAligned);
     key += ofToString(s.letterSpacing);
     key += ofToString(s.dpi);
+<<<<<<< HEAD
     if (s.fontIndex < hershey.getNumFonts()) key += ofToString(s.strokeWidth);
+=======
+    key += ofToString(s.numSamples);
+    if (s.fontIndex < hershey.getNumFonts()) {
+        key += ofToString(s.strokeWidth);
+        key += ofToString(s.boldWidth);
+    }
+>>>>>>> 7a15e6f0a5bb267307220c953e3624aa67f97b16
     return key;
 }
 
@@ -356,7 +376,7 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
     
     
     string fontKey = defineFont(s.fontSize * s.dpi);
-    ofxPrecisionStructure & structure = structCache[getFboKey(text)];
+    ofxPrecisionStructure & structure = structCache[getTextureKey(text)];
     
     
     if (!dontDraw) {
@@ -454,8 +474,10 @@ void ofxPrecisionText::setup(string fontLocation) {
 
 
 void ofxPrecisionText::clearCache() {
-//    for (auto & f : texCache) delete f.second;
     texCache.clear();
+    structCache.clear();
+    fontCache.clear();
+    markdownCache.clear();
 }
 
 ofxPrecisionStructure ofxPrecisionText::draw(string text, glm::vec3 originPoint, ofxPrecisionSettings settings) {

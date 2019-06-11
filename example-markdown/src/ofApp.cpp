@@ -36,11 +36,11 @@ void ofApp::draw(){
     
     doc.draw(txt, bounds, settings);
     
-    settings.fontSize = 32;
+    settings.fontSize = 16;
     settings.markdown = false;
     
     bounds.y += ofGetHeight()/2;
-//    input.draw(bounds, settings);
+    input.draw(bounds, settings);
     
     
     
