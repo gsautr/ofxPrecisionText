@@ -213,6 +213,8 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
         }
         ch.strokeWidth = (ch.isBold) ? s.strokeWidth * s.boldWidth * s.dpi : s.strokeWidth * s.dpi;
         
+        ch.color = (ch.isLink) ? s.linkColor : s.strokeColor;
+        
         string l = ofToString(text[i]);
         ch.letter = l;
         ch.bounds = getBounds(l, ch.fontSize * s.dpi, 0,0);
@@ -366,7 +368,6 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
                 
                 
                 
-                
                 float  scale = ( 1.0 / 31.0 ) * (ch.fontSize * s.dpi);
                 int xPos = ch.bounds.x;
                 int yPos = ch.bounds.y;
@@ -378,37 +379,29 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
                 ofScale(scale, -scale);
 //                ofLog() << "A" << ch.color;
                 
-//                ofNotifyEvent(charBegin, ch);
+                ofNotifyEvent(charBegin, ch);
                 
-                ofPath path = hershey.getPath(ch.letter[0]);
-                ofSetColor(255);
-                ofColor c = ch.color;
-                float b = ch.strokeWidth;
-                path.setColor( c );
-                path.setStrokeColor( c );
-                path.setFillColor( c);
-                path.setFilled(false);
-//                ofSetFillColor(c);
-                path.setStrokeWidth(b);
-                ofNoFill();
-//                hershey.setItalic( ch.isItalic , 4 );
-                if (ch.isLink) {
-                    ofLog() << "L" << ch.letter << ch.strokeWidth << path.getStrokeColor();
-                } else {
-                    ofLog() << "T" << ch.letter << ch.strokeWidth << path.getStrokeColor();
-                }
-                path.draw(0,0);
+                ofPath p = hershey.getPath(ch.letter[0]);
+                p.setStrokeColor((ch.isLink) ? s.linkColor : s.strokeColor );
+                p.setStrokeWidth( (ch.isBold) ? s.strokeWidth * s.boldWidth * s.dpi : s.strokeWidth * s.dpi);
+                ofFill();
+                ofSetColor( (ch.isLink) ? s.linkColor : s.strokeColor);
+                hershey.setScale( (1.0 / 31.0) * ch.fontSize);
+                hershey.setColor( ch.color );
+                hershey.setStroke( (ch.isBold) ? s.strokeWidth * s.boldWidth * s.dpi : s.strokeWidth * s.dpi );
+                hershey.setItalic( ch.isItalic , 4 );
+
+                p.draw(0,0);
                 
-//                ofNotifyEvent(charEnd, ch);
+                ofNotifyEvent(charEnd, ch);
                 
                 ofPopMatrix();
                 ofPopMatrix();
                 
 //                ofNoFill();
 //                ofDrawRectangle(ch.bounds);
-                
-                
 //                drawString(ch.letter, ch.fontSize * s.dpi, ch.bounds.x, ch.bounds.y);
+                
                 ofNoFill();
                 ofSetLineWidth(1);
                 
@@ -492,7 +485,6 @@ ofxPrecisionStructure ofxPrecisionText::draw(string text, ofRectangle boundingBo
     string fboKey = getFboKey(text);
     string key = getFboKey(text);
     
-        
         
     auto it = texCache.find(fboKey);
     if (it == texCache.end()) {

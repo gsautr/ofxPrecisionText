@@ -13,8 +13,8 @@ void ofApp::setup(){
         
         float sine = sin( (ofGetElapsedTimef() * 10 ) + ch.index );
         float y = ofMap(sine, -1, 1, -10, 10 );
-//        ofTranslate(0, y);
-//        ofRotateX(y * 2);
+        ofTranslate(0, y);
+        ofRotateX(y * 2);
         ch.color = ofColor(255,0,0);
 //        ofLog() << "B" << ch.color;
         //        ofLog() << "YO!" << ch.bounds.width;
