@@ -6,12 +6,27 @@
 
 
 
-string ofxPrecisionText::getFboKey(string text) {
+string ofxPrecisionText::getTextureKey(string text) {
     
-    /*-- Get unique hash for FBO cache --*/
+    /*-- Get unique hash for Texture cache --*/
     
-    string key = fontList[s.fontIndex] + ofToString(s.fontSize) + ofToString(s.strokeColor.r) + ofToString(s.strokeColor.g) + ofToString(s.strokeColor.b) + ofToString(s.strokeColor.a) + ofToString(s.numSamples) + text + ofToString(s.horizontalAlign) + ofToString(s.lineHeight) + ofToString(s.pixelAligned) + ofToString(s.letterSpacing) + ofToString(s.dpi);
-    if (s.fontIndex < hershey.getNumFonts()) key += ofToString(s.strokeWidth);
+    string key = text;
+    key += fontList[s.fontIndex];
+    key += ofToString(s.fontSize);
+    key += ofToString(s.strokeColor.r);
+    key += ofToString(s.strokeColor.g);
+    key += ofToString(s.strokeColor.b);
+    key += ofToString(s.strokeColor.a);
+    key += ofToString(s.horizontalAlign);
+    key += ofToString(s.lineHeight);
+    key += ofToString(s.pixelAligned);
+    key += ofToString(s.letterSpacing);
+    key += ofToString(s.dpi);
+    key += ofToString(s.numSamples);
+    if (s.fontIndex < hershey.getNumFonts()) {
+        key += ofToString(s.strokeWidth);
+        key += ofToString(s.boldWidth);
+    }
     return key;
 }
 
@@ -334,7 +349,7 @@ ofxPrecisionStructure ofxPrecisionText::drawFbo(string text, ofRectangle boundin
     
     
     string fontKey = defineFont(s.fontSize * s.dpi);
-    ofxPrecisionStructure & structure = structCache[getFboKey(text)];
+    ofxPrecisionStructure & structure = structCache[getTextureKey(text)];
     
     
     if (!dontDraw) {
@@ -403,8 +418,10 @@ void ofxPrecisionText::setup(string fontLocation) {
 
 
 void ofxPrecisionText::clearCache() {
-//    for (auto & f : texCache) delete f.second;
     texCache.clear();
+    structCache.clear();
+    fontCache.clear();
+    markdownCache.clear();
 }
 
 ofxPrecisionStructure ofxPrecisionText::draw(string text, glm::vec3 originPoint, ofxPrecisionSettings settings) {
@@ -429,8 +446,8 @@ ofxPrecisionStructure ofxPrecisionText::draw(string text, ofRectangle boundingBo
     
     s = settings;
     
-    string fboKey = getFboKey(text);
-    string key = getFboKey(text);
+    string fboKey = getTextureKey(text);
+    string key = getTextureKey(text);
     
     
     auto it = texCache.find(fboKey);

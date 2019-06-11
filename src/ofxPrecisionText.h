@@ -26,13 +26,14 @@ private:
     vector<int> regexReplace(string & text, string reg);
     
     std::map<string, ofxPrecisionStructure> structCache;
-    std::map<string, ofFbo *> fboCache;
     std::map<string, ofTexture> texCache;
     std::map<string, ofTrueTypeFont> fontCache;
     std::map<string, string> markdownCache;
     
     string defineFont(float fSize);
-    string getFboKey(string text);
+    string getTextureKey(string text);
+    string getMarkdownKey(string text);
+    string getStructureKey(string text);
     
     ofRectangle getBounds(string text, float fSize, float x, float y);
     void drawString(string text, float fSize, float xx, float yy);

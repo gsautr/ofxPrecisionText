@@ -86,7 +86,7 @@ struct ofxPrecisionSettings {
         strokeColor = ofColor(255);
         linkColor = ofColor(0,255,255);
         
-        pixelAligned = false;
+        pixelAligned = true;
 #ifdef TARGET_RASPBERRY_PI
         numSamples = 0;
 #else
