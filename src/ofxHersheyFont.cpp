@@ -85,6 +85,7 @@ void ofxHersheyFont::setFont(int i) {
     auto it = charCache.find(names[fontIndex]);
     if (it == charCache.end()) {
         
+        ofLogNotice("[ofxPrecisionText]") << "Loading Hershey" << names[fontIndex];
         map<int, ofPath> charSet;
         map<int, int> widths;
         int height = 0;
@@ -288,23 +289,10 @@ void ofxHersheyFont::drawChar(int asciiValue, float stroke) {
 }
 
 
-//--------------------------------------------------------------
-void ofxHersheyFont::setColor(ofColor c) {
-    color = c;
-}
+ofRectangle ofxHersheyFont::getBounds(string stringValue, float fSize, int x, int y) {
+    float s = (1.0 / 31.0) * fSize;
 
-//--------------------------------------------------------------
-void ofxHersheyFont::setScale(float s) {
-    scale = s;
-}
-
-//--------------------------------------------------------------
-void ofxHersheyFont::setStroke(float s) {
-    stroke = s;
-}
-
-ofRectangle ofxHersheyFont::getBounds(string stringValue, int x, int y) {
-    return ofRectangle(x, y, widthCache[names[fontIndex]][stringValue[0] - 32], heightCache[names[fontIndex]] * scale);
+    return ofRectangle(x, y, widthCache[names[fontIndex]][stringValue[0] - 32] * s, heightCache[names[fontIndex]] * s);
 }
 
 //--------------------------------------------------------------

@@ -10,6 +10,13 @@ void ofApp::setup(){
     doc.setup();
     input.setup();
     
+    
+    //    string txt;
+    //    for (int i = 0; i < 256; i++) {
+    //        txt += (char)i;
+    //        txt += " ";
+    //    }
+    
 }
 
 //--------------------------------------------------------------
@@ -20,29 +27,24 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     
+    
     ofBackground(0);
     string txt = "Hello [link](google.com) [another](fsdfds) ";
     
-//    string txt;
-//    for (int i = 0; i < 256; i++) {
-//        txt += (char)i;
-//        txt += " ";
-//    }
-    
     settings.markdown = true;
-    
+    settings.cache = false;
+    settings.horizontalAlign = 0;
+    settings.verticalAlign = 0;
+    settings.fontSize = 32;
     
     ofRectangle bounds( 100, 100, ofGetWidth() - 200, ofGetHeight()/2 - 200 );
     
-    doc.draw(txt, bounds, settings);
+    ofxPrecisionStructure s = doc.draw(txt, bounds, settings);
     
-    settings.fontSize = 16;
     settings.markdown = false;
     
     bounds.y += ofGetHeight()/2;
-    input.draw(bounds, settings);
-    
-    
+    //    input.draw(bounds, settings);
     
 }
 

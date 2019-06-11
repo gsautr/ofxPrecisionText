@@ -16,7 +16,6 @@ private:
     int fboType;
     bool samplesChanged;
     bool shouldRedraw;
-    ofxHersheyFont hershey;
     ofFbo fbo;
     
     vector<string> splitString(int fromChar, string text, vector<int>);
@@ -38,10 +37,11 @@ private:
     ofRectangle getBounds(string text, float fSize, float x, float y);
     void drawString(string text, float fSize, float xx, float yy);
     
-    ofxPrecisionStructure drawFbo(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false);
+    ofxPrecisionStructure drawStructure(ofxPrecisionStructure structure, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false);
     ofxPrecisionStructure generateStructure(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false);
     
 public:
+    ofxHersheyFont hershey;
     ofEvent<ofxPrecisionTextChar &> charBegin;
     ofEvent<ofxPrecisionTextChar &> charEnd;
     vector<string> fontList;

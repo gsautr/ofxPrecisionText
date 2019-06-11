@@ -26,5 +26,8 @@ class ofApp : public ofBaseApp{
         ofEventListener charEnd;
         ofxPrecisionText t;
         ofxPrecisionSettings s;
-		
+        ofxPrecisionStructure st;
+        vector<float> r;
+        string text;
+        vector<ofPoint> particles;
 };

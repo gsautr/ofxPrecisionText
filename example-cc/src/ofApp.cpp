@@ -9,20 +9,41 @@ void ofApp::setup(){
     s.verticalAlign = 0;
     s.fontSize = 48;
     
+    ofSetFrameRate(120);
+    
+    ofBackground(0);
+    ofSetBackgroundAuto(false);
+    
+    text = "Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World Hello World ";
+
+    for (int i = 0; i < 100; i ++) r.push_back(ofRandom(0, 1));
+    
     charBegin = t.charBegin.newListener([this](ofxPrecisionTextChar & ch){
         
-        float sine = sin( (ofGetElapsedTimef() * 10 ) + ch.index );
-        float y = ofMap(sine, -1, 1, -10, 10 );
-        ofTranslate(0, y);
-        ofRotateX(y * 2);
-        ch.color = ofColor(255,0,0);
-//        ofLog() << "B" << ch.color;
-        //        ofLog() << "YO!" << ch.bounds.width;
+        float max = 2;
+        float min = 0.5;
+        float a = sin( (ofGetElapsedTimef() * ofMap(r[0], 0, 1, min, max) ) + ch.index );
+        float b = sin( (ofGetElapsedTimef() * ofMap(r[1], 0, 1, min, max)  ) + ch.index );
+        float c = sin( (ofGetElapsedTimef() * ofMap(r[2], 0, 1, min, max) ) + ch.index );
+        float d = sin( (ofGetElapsedTimef() * ofMap(r[3], 0, 1, min, max) ) + ch.index );
+        float e = sin( (ofGetElapsedTimef() * ofMap(r[4], 0, 1, min, max) ) + ch.index );
+        
+        
+        ofTranslate(0, ofMap(a, -1, 1, -10 * r[10], 10 * r[11] ));
+        ofRotateX(b * 40 * r[21]);
+        ofRotateY(b * 40 * r[22]);
+        ofRotateZ(b * 40 * r[23]);
+        ofScale( e * 6 * r[3]);
+        ofColor co;
+        co.setBrightness( ofMap(d, -1, 1, ofMap( r[4], 0, 1, 100, 255) , ofMap( r[5], 0, 1, 200, 300) ) );
+        co.setSaturation( ofMap(e, -1, 1, ofMap( r[6], 0, 1, 0, 255) , ofMap( r[7], 0, 1, 0, 255) ) );
+        co.setHue( ofMap(c, -1, 1, 255  * r[8], 255 * r[9]) );
+        co.a = 30;
+        ch.color = co;//ofColor(255,0,0);
+        ch.strokeWidth = ofMap(d, -1, 1, 0.5, 4);
     });
-//    charDrawn = t.charBegin.newListener([this](ofxPrecisionTextChar & ch){
-//        ofTranslate(ofRandom( -4, 4), ofRandom(-10, 10));
-//        //        ofLog() << "YO!" << ch.bounds.width;
-//    });
+    
+//    st = generateStructure(text, ofGetWidth(), ofGetHeifght());
     
 }
 
@@ -33,14 +54,23 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    ofBackground(0);
-    t.draw("Hello World", ofPoint(ofGetWidth()/2, ofGetHeight()/2), s);
-    t.clearCache();
+    ofEnableAlphaBlending();
+    ofFill();
+    ofEnableBlendMode(OF_BLENDMODE_ALPHA);
+    ofSetColor(0,0,0,4.0);
+    ofDrawRectangle(0, 0, ofGetWidth(), ofGetHeight());
+    
+    ofEnableBlendMode(OF_BLENDMODE_ADD);
+    
+    t.draw(text, ofPoint(ofGetWidth()/2, ofGetHeight()/2), s);
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+    if (key == ' ') {
+        s.fontIndex = (int)ofRandom(0, t.hershey.getNumFonts());
+        for (auto & f : r) f = ofRandom(0, 1);
+    }
 }
 
 //--------------------------------------------------------------

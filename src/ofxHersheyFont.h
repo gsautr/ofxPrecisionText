@@ -36,10 +36,8 @@ class ofxHersheyFont {
         void draw(string stringValue, float x, float y, float str);
         void draw(string stringValue, float x, float y, float str, ofColor col);
         void draw(string stringValue, ofRectangle rectangle, int horizontalAlign, int verticalAlign, float str, ofColor col);
-		void setColor(ofColor c);
-        void setScale(float s);
-        void setStroke(float s);
-        ofRectangle getBounds(string stringValue, int x, int y);
+    
+        ofRectangle getBounds(string stringValue, float fSize, int x, int y);
 		float getWidth(string stringValue);
 		float getHeight();
 		ofPath getPath(string stringValue, float scale);
