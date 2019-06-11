@@ -42,6 +42,8 @@ private:
     ofxPrecisionStructure generateStructure(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false);
     
 public:
+    ofEvent<ofxPrecisionTextChar &> charBegin;
+    ofEvent<ofxPrecisionTextChar &> charEnd;
     vector<string> fontList;
     
     /*-- Force redraw on FBO cache --*/
