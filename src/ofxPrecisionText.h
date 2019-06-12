@@ -6,7 +6,7 @@
  */
 
 #pragma once
-#include "ofxHersheyFont.h"
+#include "ofxPrecisionFont.h"
 #include "ofxPrecisionDefinitions.h"
 
 class ofxPrecisionText {
@@ -25,9 +25,9 @@ private:
     vector<int> regexReplace(string & text, string reg);
     
     std::map<string, ofxPrecisionStructure> structCache;
+    std::map<string, ofxPrecisionStructure> markdownCache;
     std::map<string, ofTexture> texCache;
     std::map<string, ofTrueTypeFont> fontCache;
-    std::map<string, string> markdownCache;
     
     string defineFont(float fSize);
     string getTextureKey(string text);
@@ -36,12 +36,13 @@ private:
     
     ofRectangle getBounds(string text, float fSize, float x, float y);
     void drawString(string text, float fSize, float xx, float yy);
+    void drawChar(ofxPrecisionTextChar & ch);
     
-    ofxPrecisionStructure drawStructure(ofxPrecisionStructure structure, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false);
+    ofxPrecisionStructure drawStructure(ofxPrecisionStructure structure);
     ofxPrecisionStructure generateStructure(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false);
     
 public:
-    ofxHersheyFont hershey;
+    ofxPrecisionFont hershey;
     ofEvent<ofxPrecisionTextChar &> charBegin;
     ofEvent<ofxPrecisionTextChar &> charEnd;
     vector<string> fontList;

@@ -19,41 +19,25 @@
 #include "ofUtils.h"
 
 using namespace std;
-/**
- * Bool
- */
+
 bool need_paragraph = true;
 bool current_paragraph = false;
 bool current_list = false;
 
-/**
- * Regex
- */
-//*some tex*
-regex italic_regex("[<>a-zA-Z0-9 ]*\\*([a-zA-Z0-9 ]*)\\*[<>a-zA-Z0-9 ]*");
-//**some text**
-regex bold_regex("\\*\\*(.*)\\*\\*");
-//*   Some text
-regex list_regex("\\*\t(.*)");
-//[some text](URL)
-regex url_regex("[^!]*\\[(.*)\\]\\((.*)\\)");
-//![some text](URL)
-regex img_regex("!\\[(.*)\\]\\((.*)\\)");
+/*-- Regex --*/
 
-/*
- * H1, H2 and H3 style headers regexs
- */
-//# some text
+regex italic_regex("[<>a-zA-Z0-9 ]*\\*([a-zA-Z0-9 ]*)\\*[<>a-zA-Z0-9 ]*");
+regex bold_regex("\\*\\*(.*)\\*\\*");
+regex list_regex("\\*\t(.*)");
+regex url_regex("[^!]*\\[(.*)\\]\\((.*)\\)");
+regex img_regex("!\\[(.*)\\]\\((.*)\\)");
 regex h1_regex("# (.*)");
-//## some text
 regex h2_regex("## (.*)");
-//### some text
 regex h3_regex("### (.*)");
 
 extern bool need_paragraph;
 extern bool current_paragraph;
 extern bool current_list;
-
 
 bool sortInts(int a, int b) {
     return a < b;

@@ -6,18 +6,14 @@ void ofApp::setup(){
     
     
     
-    screenDpi = ((ofAppGLFWWindow*)ofGetWindowPtr())->getPixelScreenCoordScale();
-    ofSetWindowShape(ofGetWidth() * screenDpi, ofGetHeight() * screenDpi);
+    float dpi = ((ofAppGLFWWindow*)ofGetWindowPtr())->getPixelScreenCoordScale();
+    s.dpi = dpi;
+    ofSetWindowShape(ofGetWidth() * dpi, ofGetHeight() * dpi);
     
-    text.setup();
-    horizontalAlign = -1;
-    verticalAlign = 0;
-    fontSize = 14;
-    fontStroke = 1.2;
-    fontIndex = 0;
-    lineHeight = 1;
+    
+    t.setup();
     ofLog::setAutoSpace(true);
-    ofSetFrameRate(60.0f);
+    ofSetFrameRate(120.0f);
     
     
     
@@ -25,7 +21,7 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
-
+    
 }
 
 //--------------------------------------------------------------
@@ -33,8 +29,8 @@ void ofApp::draw(){
     
     ofBackground(10);
     
-    int w = ofGetWidth()/ screenDpi;
-    int h = ofGetHeight()/ screenDpi;
+    int w = ofGetWidth()/ s.dpi;
+    int h = ofGetHeight()/ s.dpi;
     int ww = w/2 - 250;
     int hh = h - 300;
     
@@ -45,138 +41,51 @@ void ofApp::draw(){
     ofRectangle D(50, 200, w - ww - ww - 200, hh/2);
     ofRectangle E(50, 200 + hh/2, w - ww - ww - 200, hh/2);
     
-    A.scale( ofPoint(screenDpi, screenDpi) );
-    B.scale( ofPoint(screenDpi, screenDpi) );
-    C.scale( ofPoint(screenDpi, screenDpi) );
-    D.scale( ofPoint(screenDpi, screenDpi) );
-    E.scale( ofPoint(screenDpi, screenDpi) );
-    A.setPosition( A.getPosition() * screenDpi );
-    B.setPosition( B.getPosition() * screenDpi );
-    C.setPosition( C.getPosition() * screenDpi );
-    D.setPosition( D.getPosition() * screenDpi );
-    E.setPosition( E.getPosition() * screenDpi );
+    A.scale( ofPoint(s.dpi, s.dpi) );
+    B.scale( ofPoint(s.dpi, s.dpi) );
+    C.scale( ofPoint(s.dpi, s.dpi) );
+    D.scale( ofPoint(s.dpi, s.dpi) );
+    E.scale( ofPoint(s.dpi, s.dpi) );
+    A.setPosition( A.getPosition() * s.dpi );
+    B.setPosition( B.getPosition() * s.dpi );
+    C.setPosition( C.getPosition() * s.dpi );
+    D.setPosition( D.getPosition() * s.dpi );
+    E.setPosition( E.getPosition() * s.dpi );
     
     ofxPrecisionSettings s;
     
-    s.dpi = screenDpi;
     
-    ofPoint point = B.getCenter();
+    vector<ofxPrecisionStructure> structures;
     
-    vector<ofxPrecisionStructure> fboRects;
+    ofPoint hA(B.x, 100 * s.dpi);
+    ofPoint hB(A.x, 100 * s.dpi);
+    ofPoint hC(D.x, 100 * s.dpi);
     
-    ofSetLineWidth(1.5);
-    ofSetColor(0,255,255);
-    ofDrawRectangle(A);
-    ofDrawRectangle(C);
-    ofFill();
-    ofDrawLine(B.getLeft(), B.getCenter().y, B.getRight(), B.getCenter().y);
-    ofDrawLine(B.getCenter().x, B.getTop(), B.getCenter().x, B.getBottom());
-    ofNoFill();
-    
-    s.strokeColor = ofColor(255);
-    s.fontIndex = fontIndex;
-    s.lineHeight = lineHeight;
-    s.strokeWidth = fontStroke;
-    s.fontSize = fontSize;
-    s.horizontalAlign = 1;
-    s.verticalAlign = 0;
-    
-    fboRects.push_back( text.draw("# of**Point**", ofPoint(B.x, 100 * screenDpi), s) );
-    fboRects.push_back( text.draw("# of**Rectangle**", ofPoint(A.x, 100 * screenDpi), s) );
-    fboRects.push_back( text.draw("# ofx**PrecisionText**", ofPoint(D.x, 100 * screenDpi), s) );
-
-    s.horizontalAlign = horizontalAlign;
-    s.verticalAlign = verticalAlign;
-    
-    fboRects.push_back( text.draw("Hello World", point, s) );
-    fboRects.push_back( text.draw("Hello World", C, s) );
-
-
-    fboRects.push_back( text.draw("Nulla *facilisis* euismod risus, eget **elementum** tortor pulvinar vel. Donec at ultrices mi.\n# Curabitur\nfringilla euismod luctus. Integer sem est, euismod cursus justo in, *placerat* lacinia magna. [Suspendisse](ggogle.com) purus enim, **posuere**\nvitae lobortis eget, convallis eu tortor. \n# Class\naptent taciti sociosqu ad litora torquent per [conubia](hello) nostra, per [inceptos](fsdfds.com) himenaeos.", A, s) );
+    structures.push_back( t.draw("ofPoint", hA, s) );
+    structures.push_back( t.draw("ofRectangle", hB, s) );
+    structures.push_back( t.draw("ofxPrecisionText", hC, s) );
     
     
-    s.strokeWidth = 1.2;
-    s.fontIndex = 0;
+    structures.push_back( t.draw("Hello World", B.getCenter(), s) );
+    structures.push_back( t.draw("Hello World", C, s) );
+    structures.push_back( t.draw("The quick brown fox jumps over the lazy dog.", A, s) );
     
     
-    s.lineHeight = 2;
-    
-    string outputA = "";
-    
-    outputA += "Font: **" + ofToString(text.fontList[fontIndex]) + "**";
-    outputA += "\nFont Size: **" + ofToString(fontSize) + "**";
-    outputA += "\nFont Stroke: **" + ofToString(fontStroke) + "**";
-    outputA += "\nLine Height: **" + ofToString(lineHeight) + "**";
-//    outputA += "\nFBO Samples: **" + ofToString(numSamples) + "**";
-    outputA += "\nVert Align: **" + ofToString(verticalAlign) + "**";
-    outputA += "\nHorz Align: **" + ofToString(horizontalAlign) + "**";
-    
-    string outputB = "";
-    outputB += "Z/X: -/+ **Font**";
-    outputB += "\nW/E: -/+ **Font Size**";
-    outputB += "\nA/S: -/+ **Font Stroke**";
-    outputB += "\nD/F: -/+ **Line Height**";
-    outputB += "\nE/R: -/+ **FBO Samples**";
-    outputB += "\nArrow Keys: **Vert/Horz Align**";
-    
-    s.horizontalAlign = -1;
-    s.verticalAlign = 1;
-    
-    text.draw(outputA, D, s);
-    s.strokeColor = ofColor(0,255,255);
-    text.draw(outputB, E, s);
-    
-    ofNoFill();
-    ofSetColor(0,255,255, 50);
-    for (auto & r : fboRects) ofDrawRectangle(r.bounds);
+    ofxPrecisionRow row(0,0,ofGetWidth(), ofGetHeight());
+    row.addCol();
+    row.addCol();
+    for (auto & rr : row.addCol()) {
+        ofSetColor(255,255,0);
+        ofNoFill();
+        ofDrawRectangle(rr);
+    }
     
     
-    ofSetColor(255);
-    ofDrawLine(fboRects[5].bounds.getBottomLeft(), fboRects[5].bounds.getBottomRight());
-    ofDrawLine(fboRects[5].bounds.getBottomLeft(), fboRects[5].bounds.getBottomRight());
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
     
-//    if (key == ' ') {
-//        text.pixelAligned = !text.pixelAligned;
-//    }
-    
-    if (key == 'b') text.clearCache();
-
-    if (key == 'a') fontStroke -= 0.2;
-    if (key == 's') fontStroke += 0.2;
-    
-//    if (key == 'c') text.letterSpacing -= 0.25;
-//    if (key == 'v') text.letterSpacing += 0.25;
-    
-    if (key == 'z') fontIndex -= 1;
-    if (key == 'x') fontIndex += 1;
-    
-    int fontMax = text.fontList.size() - 1;
-    if (fontIndex < 0) fontIndex = fontMax;
-    if (fontIndex > fontMax) fontIndex = 0;
-    
-    if (key == 'd') lineHeight -= 0.05;
-    if (key == 'f') lineHeight += 0.05;
-    
-    //    if (key == 'e') { text.setFboSamples(text.numSamples - 1); }
-    //    if (key == 'r') { text.setFboSamples(text.numSamples + 1); }
-    
-    if (key == 'e') { screenDpi -= 0.5; }
-    if (key == 'r') { screenDpi += 0.5; }
-    
-    
-    if (key == OF_KEY_LEFT && horizontalAlign > -1) horizontalAlign -= 1;
-    if (key == OF_KEY_RIGHT && horizontalAlign < 1) horizontalAlign += 1;
-    if (key == OF_KEY_DOWN && verticalAlign > -1) verticalAlign -= 1;
-    if (key == OF_KEY_UP && verticalAlign < 1) verticalAlign += 1;
-    
-    if (key == 'q') fontSize -= 0.5;
-    if (key == 'w') fontSize += 0.5;
-    key -= 49;
-//    if (key >= 0 && key <= 9) fontIndex = key;w
     
     
 }
@@ -187,45 +96,45 @@ void ofApp::keyReleased(int key){
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseEntered(int x, int y){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseExited(int x, int y){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::gotMessage(ofMessage msg){
-
+    
 }
 
 //--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){ 
-
+void ofApp::dragEvent(ofDragInfo dragInfo){
+    
 }

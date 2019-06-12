@@ -1,6 +1,5 @@
 #pragma once
 
-
 struct ofxPrecisionTextHyperlink {
     int start;
     int end;
@@ -32,6 +31,7 @@ struct ofxPrecisionStructure {
     vector<ofxPrecisionTextHyperlink> links;
     
     string text;
+    string originalText;
     int inSize;
     int outSize;
     int removed;
@@ -86,7 +86,7 @@ struct ofxPrecisionSettings {
         cache = true;
         
         fontIndex = 0;
-        headingScale = 2;
+        headingScale = 3;
         
         strokeColor = ofColor(255);
         linkColor = ofColor(0,255,255);

@@ -6,6 +6,7 @@ private:
     
     string clipboard;
 public:
+    bool isActive;
     ofxPrecisionText text;
     ofxPrecisionStructure structure;
     float pressTimestamp;
@@ -35,11 +36,21 @@ public:
     
     void dragged(int x, int y){
         
+        if (!isActive) return;
+        
         pos[0] = getNearestCharacter(x, y);
         
     }
     
     void pressed(int x, int y){
+        
+        
+        isActive = structure.bounds.inside(x, y);
+        
+        if (!isActive) {
+            pos[0] = pos[1];
+            return;
+        }
         
         int aa = getNearestCharacter(x, y);
         int bb = aa;

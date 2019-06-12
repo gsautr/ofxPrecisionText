@@ -10,13 +10,6 @@ void ofApp::setup(){
     doc.setup();
     input.setup();
     
-    
-    //    string txt;
-    //    for (int i = 0; i < 256; i++) {
-    //        txt += (char)i;
-    //        txt += " ";
-    //    }
-    
 }
 
 //--------------------------------------------------------------
@@ -29,22 +22,22 @@ void ofApp::draw(){
     
     
     ofBackground(0);
-    string txt = "Hello [link](google.com) [another](fsdfds) ";
-    
-    settings.markdown = true;
-    settings.cache = false;
-    settings.horizontalAlign = 0;
-    settings.verticalAlign = 0;
-    settings.fontSize = 32;
-    
-    ofRectangle bounds( 100, 100, ofGetWidth() - 200, ofGetHeight()/2 - 200 );
-    
-    ofxPrecisionStructure s = doc.draw(txt, bounds, settings);
+    string defaultText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vel scelerisque sapien. Quisque sit amet semper ante, sed venenatis arcu. Ut commodo lectus non condimentum blandit. Vestibulum accumsan, purus at mollis tincidunt, quam nisi tincidunt dolor, vel tristique nisi libero eget tellus. Integer pulvinar ex cursus purus porttitor convallis. Ut eget est efficitur, placerat felis vitae, tincidunt nunc. Pellentesque commodo sem nec nibh eleifend fermentum. Nam feugiat est lorem, sed molestie ante convallis at. Aliquam suscipit pharetra velit vitae convallis. Aenean suscipit a ante sed faucibus. Donec justo arcu, pulvinar quis ligula vitae, lacinia sollicitudin sem.";
     
     settings.markdown = false;
+    settings.cache = false;
+    settings.fontSize = 16;
+//    settings.strokeColor = ofColor(0);
     
-    bounds.y += ofGetHeight()/2;
-    //    input.draw(bounds, settings);
+    ofRectangle bounds( 100, 100, ofGetWidth()/2 - 200, ofGetHeight() - 200 );
+    
+    input.setText(defaultText);
+    string inputText = input.draw(bounds, settings);
+    
+    settings.markdown = true;
+    
+    bounds.x += ofGetWidth()/2;
+    ofxPrecisionStructure s = doc.draw(inputText, bounds, settings);
     
 }
 
@@ -53,7 +46,16 @@ void ofApp::draw(){
 void ofApp::keyPressed(ofKeyEventArgs & e){
     
     if (e.key == 'c') doc.copyToClipboard();
-    input.keyPressed(e.key);
+//    input.keyPressed(e.key);
+    
+    
+    if (e.key == 'a') settings.horizontalAlign = -1;
+    if (e.key == 's') settings.horizontalAlign = 0;
+    if (e.key == 'd') settings.horizontalAlign = 1;
+    if (e.key == 'q') settings.verticalAlign = -1;
+    if (e.key == 'w') settings.verticalAlign = 0;
+    if (e.key == 'e') settings.verticalAlign = 1;
+    
 }
 
 //--------------------------------------------------------------

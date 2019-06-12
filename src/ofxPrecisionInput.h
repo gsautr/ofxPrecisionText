@@ -4,8 +4,8 @@
 class ofxPrecisionInput : public ofxPrecisionDocument {
 private:
     
-    string placeholder = "Default";
-    string internalText = "Hello world hello world hello world";
+    string placeholder = "Placeholder Text";
+    string internalText = "";
 public:
     
     ofxPrecisionStructure structure;
@@ -17,7 +17,14 @@ public:
         
     }
     
-    void draw(ofRectangle boundingBox, ofxPrecisionSettings settings, bool isPoint = false) {
+    void setText(string s) {
+        internalText = s;
+    }
+    void setPlaceholderText(string s) {
+        placeholder = s;
+    }
+    
+    string draw(ofRectangle boundingBox, ofxPrecisionSettings settings, bool isPoint = false) {
         
         structure = ofxPrecisionDocument::draw(internalText, boundingBox, settings, false);
         
@@ -40,6 +47,8 @@ public:
         ofDrawLine(tl, br);
         
         ofPopMatrix();
+        
+        return internalText;
         
     }
     
