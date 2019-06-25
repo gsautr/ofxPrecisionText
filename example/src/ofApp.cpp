@@ -71,14 +71,14 @@ void ofApp::draw(){
     structures.push_back( t.draw("The quick brown fox jumps over the lazy dog.", A, s) );
     
     
-    ofxPrecisionRow row(0,0,ofGetWidth(), ofGetHeight());
-    row.addCol();
-    row.addCol();
-    for (auto & rr : row.addCol()) {
-        ofSetColor(255,255,0);
-        ofNoFill();
-        ofDrawRectangle(rr);
-    }
+//    ofxPrecisionRow row(0,0,ofGetWidth(), ofGetHeight());
+//    row.addCol();
+//    row.addCol();
+//    for (auto & rr : row.addCol()) {
+//        ofSetColor(255,255,0);
+//        ofNoFill();
+//        ofDrawRectangle(rr);
+//    }
     
     
 }
