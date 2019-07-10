@@ -3,32 +3,45 @@
 #include "ofxPrecisionText.h"
 #include <regex>
 
+#include "ofxTimeMeasurements.h"
 
 
 
-string ofxPrecisionText::getTextureKey(string text) {
+string ofxPrecisionText::getStructureKey(string text) {
     
     /*-- Get unique hash for Texture cache --*/
     
     string key = text;
     key += fontList[s.fontIndex];
     key += ofToString(s.fontSize);
+    if (s.bounds.width != 0 && s.bounds.height != 0) {
+        key += ofToString(s.verticalAlign);
+        key += ofToString(s.horizontalAlign);
+        key += ofToString(s.bounds.width);
+        key += ofToString(s.bounds.height);
+    }
+    key += ofToString(s.lineHeight);
+    key += ofToString(s.letterSpacing);
+    key += ofToString(s.dpi);
+    key += ofToString(s.markdown);
     key += ofToString(s.strokeColor.r);
     key += ofToString(s.strokeColor.g);
     key += ofToString(s.strokeColor.b);
     key += ofToString(s.strokeColor.a);
-    key += ofToString(s.verticalAlign);
-    key += ofToString(s.horizontalAlign);
-    key += ofToString(s.lineHeight);
-    key += ofToString(s.pixelAligned);
-    key += ofToString(s.letterSpacing);
-    key += ofToString(s.dpi);
-    key += ofToString(s.markdown);
-    key += ofToString(s.numSamples);
+    key += ofToString(s.strokeWidth);
     if (s.fontIndex < hershey.getNumFonts()) {
         key += ofToString(s.strokeWidth);
         key += ofToString(s.boldWidth);
     }
+    return key;
+}
+
+string ofxPrecisionText::getTextureKey(string text) {
+    
+    /*-- Get unique hash for Texture cache --*/
+    
+    string key = getStructureKey(text);
+    key += ofToString(s.numSamples);
     return key;
 }
 
@@ -156,6 +169,9 @@ bool ofxPrecisionText::hasLink(vector<ofxPrecisionTextHyperlink> links, int i, o
 ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectangle boundingBox, bool dontDraw, bool isPoint) {
     
     ofxPrecisionStructure structure;
+    
+    if (text.size() == 0) return structure;
+    
     vector<ofxPrecisionTextChar> chars;
     string outputString = "";
     
@@ -165,12 +181,23 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
     if (s.markdown) {
         auto it = markdownCache.find(text);
         if (it == markdownCache.end()) {
-            ofLog() << "[ofxPrecisionText] Setting Markdown" << text;
+            ofLog() << "[ofxPrecisionText] Setting Markdown";
             markdownCache[text] = parseMarkdown(text, false);
         }
         structure = markdownCache[text];
         text = structure.text;
+    } else {
+        structure.text = text;
     }
+    
+    structure.outerBox = boundingBox;
+    structure.innerBox = boundingBox;
+    structure.innerBox.x += s.margin;
+    structure.innerBox.y += s.margin;
+    structure.innerBox.width -= s.margin*2;
+    structure.innerBox.height -= s.margin*2;
+    
+    boundingBox = structure.innerBox;
     
     
     /* -- Generate chars -- */
@@ -181,14 +208,11 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
     bool isH2 = false;
     bool isH3 = false;
     
-    int bC = 0;
     
     for (int i = 0; i < text.size(); i++) {
         
         if (hasIndex(structure.bold, i)) {
-            bC += 1;
             isBold = !isBold;
-            
         }
         if (hasIndex(structure.italic, i)) isItalic = !isItalic;
         if (hasIndex(structure.h1, i)) isH1 = !isH1;
@@ -232,7 +256,7 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
     
     /*-- Define positions and new lines --*/
     
-    int linePix = (int)(s.fontSize * s.lineHeight * s.dpi);
+    float linePix = (int)(s.fontSize * s.lineHeight * s.dpi);
     float iX = 0;
     float iY = 0;
     float maxWidth = 0;
@@ -255,6 +279,9 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
             }
             ch.bounds = getBounds(ch.letter, ch.fontSize * s.dpi, iX, iY);
             ch.bounds.height = ch.fontSize * s.lineHeight * s.dpi;
+            
+            /*-- if new line --*/
+            
             if (ch.letter == "\n") {
                 iY += linePix;
                 iX = 0;
@@ -266,9 +293,9 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
             iChars += 1;
         }
         
+        /*-- Hack to go back and offset last chars --*/
+        
         if (iX + 1 > boundingBox.width && ww < boundingBox.width) {
-            
-            /*-- Hack to go back and offset last chars --*/
             
             for (int i = iChars - w.size(); i < iChars; i++) {
                 ofxPrecisionTextChar & ch = chars[i];
@@ -293,11 +320,15 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
     /*--- Hacky horizontal  --*/
     
     
+    vector<vector<ofxPrecisionTextChar >> asLines;
+    vector<ofxPrecisionTextChar> l;
+    asLines.push_back(l);
     
     float lastY = chars[0].bounds.y;
     float lastX = chars[0].bounds.x;
     int iLine = 0;
-    int lastH = 0;
+    int lineIdx = 0;
+    float lastH = 0;
     for (int i = 0; i < chars.size(); i++) {
         ofxPrecisionTextChar & ch = chars[i];
         
@@ -344,6 +375,14 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
                 iLine = i;
             }
         }
+        if (ch.bounds.y != lastY) {
+            lineIdx += 1;
+            vector<ofxPrecisionTextChar> l;
+            asLines.push_back(l);
+        }
+        ch.line = lineIdx;
+        ch.index = i;
+        asLines.back().push_back(ch);
         
         lastY = ch.bounds.y;
         lastX = ch.bounds.x + ch.bounds.width;
@@ -351,15 +390,10 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
     }
     
     
-//    for (auto & ch : chars) {
-//        if (s.fontIndex >= hershey.getNumFonts()) {
-//            ch.bounds.y -= ch.bounds.height;
-//        }
-//    }
-    
+    structure.lines = asLines;
     structure.bounds.width = maxWidth;
-    float descender = s.fontSize * 0.25;
-    structure.bounds.height = iY + linePix;
+    float descender = s.fontSize * 0.5; // roughly 1/4 of the font size, usually
+    structure.bounds.height = iY + linePix + descender;
     structure.chars = chars;
     
     
@@ -389,10 +423,14 @@ ofxPrecisionStructure ofxPrecisionText::generateStructure(string text, ofRectang
 ofxPrecisionStructure ofxPrecisionText::drawStructure(ofxPrecisionStructure structure) {
     
     
+    TS_START("defineFont");
     
     string fontKey = defineFont(s.fontSize * s.dpi);
     
-        
+    TS_STOP("defineFont");
+    
+    TS_START("drawChars");
+
     for (auto & ch : structure.chars) {
         
         if ( int(ch.letter[0]) != 10 && int(ch.letter[0]) != 0 ) {
@@ -401,60 +439,106 @@ ofxPrecisionStructure ofxPrecisionText::drawStructure(ofxPrecisionStructure stru
             
         }
     }
+    TS_STOP("drawChars");
+
     
     
     
     return structure;
 }
 
+string ofxPrecisionText::getCharKey(ofxPrecisionTextChar & ch) {
+    string k = ch.letter;
+    k += ofToString( s.fontIndex );
+    k += ofToString( ch.color );
+    k += ofToString( ch.fontSize );
+    k += ofToString( ch.strokeWidth );
+    return k;
+}
 
-void ofxPrecisionText::drawChar(ofxPrecisionTextChar & ch) {
+void ofxPrecisionText::drawCharPath( ofxPrecisionTextChar & ch ) {
     
+    
+    float x = ch.bounds.x;
+    float y = ch.bounds.y;
+    float w = ch.bounds.width;
+    float h = ch.bounds.height;
     string fontKey = defineFont(ch.fontSize);
-    int x = ch.bounds.x;
-    int y = ch.bounds.y;
-    int w = ch.bounds.getWidth();
-    int h = ch.bounds.getHeight();
-    if (s.fontIndex < hershey.getNumFonts()) {
-        y += h;//hershey.getHeight(); //( h / 2 ) + ( hershey.getHeight() / 2 );
-    }
-    if (s.pixelAligned) {
-        x = (int)x;
-        y = (int)y;
-    }
-
+    
+    /*-- scaling --*/
+    
     bool isHershey = s.fontIndex < hershey.getNumFonts();
     float sc = ( 1.0 / 31.0 ) * (ch.fontSize * s.dpi);
     if (!isHershey) sc = 1 * s.dpi;
-    ofPath p;
-
-    ofPushMatrix();
-    ofTranslate(x, y );
+    
+    /*-- getpath --*/
+    
+    
+    ofPath * p;
     
     if (isHershey) {
-        ofScale(sc, -sc);
-        p = hershey.getPath(ch.letter[0]);
+        p = &hershey.getPath(ch.letter[0]);
+        p->setStrokeColor(ch.color);
+        p->setStrokeWidth( ch.strokeWidth * s.dpi);
     } else {
-        ofScale(sc, sc);
-        p = fontCache[fontKey].getStringAsPoints(ch.letter, true, true)[0];
-    }
-    ofNotifyEvent(charBegin, ch);
-    
-    if (isHershey) {
-        p.setStrokeColor(ch.color);
-        p.setStrokeWidth( ch.strokeWidth * s.dpi);
-    } else {
-        p.setStrokeColor(ch.color);
-        p.setFillColor(ch.color);
+        p = &fontCache[fontKey].getStringAsPoints(ch.letter, true, true)[0];
+        p->setStrokeColor(ch.color);
+        p->setFillColor(ch.color);
         float bold = (ch.strokeWidth - s.strokeWidth) * s.dpi;
-        p.setStrokeWidth(bold);
+        p->setStrokeWidth(bold);
     }
-
-    p.draw(0,0);
-
+    
+    ofPushMatrix();
+    ofTranslate(0, h * 0.75);
+    ofScale(sc, -sc);
+    ofNotifyEvent(charBegin, ch);
+    p->draw(0,0);
     ofNotifyEvent(charEnd, ch);
-
     ofPopMatrix();
+}
+
+void ofxPrecisionText::drawChar(ofxPrecisionTextChar & ch) {
+    
+    string key = getCharKey(ch);
+    float x = ch.bounds.x;
+    float y = ch.bounds.y;
+    float w = ch.bounds.width;
+    float h = ch.bounds.height;
+    
+    if (!s.cache) {
+        auto it = charTexCache.find(key);
+        if (it == charTexCache.end()) {
+            
+            ofLogNotice("[ofxPrecisionText]") << "Add Char Texture";
+            ofFbo * fbo = new ofFbo();
+            fbo->allocate(w, h + (h * 0.5), fboType, s.numSamples);
+            fbo->begin();
+            
+            ofClear(255,0);
+            ofSetColor(255);
+            drawCharPath(ch);
+            
+            fbo->end();
+            charTexCache[key] = fbo->getTexture();
+            
+            delete fbo;
+        }
+        
+    }
+    
+    ofPushMatrix();
+    ofTranslate( x, y);
+    ofSetColor(255);
+    if (!s.cache) charTexCache[key].draw(0,0);
+    if (s.cache) drawCharPath(ch);
+    ofPopMatrix();
+    if (s.debug) {
+        ofNoFill();
+        ofSetColor(255,0,0,255);
+        ofDrawRectangle(ch.bounds);
+    }
+    
+//
 }
 
 bool ofxPrecisionText::hasIndex(vector<int> indexes, int i) {
@@ -518,17 +602,30 @@ ofxPrecisionStructure ofxPrecisionText::draw(string text, ofPoint originPoint, o
 ofxPrecisionStructure ofxPrecisionText::draw(string text, int x, int y, int width, int height, ofxPrecisionSettings settings) {
     
     ofRectangle r(x,y,width,height);
-    return ofxPrecisionText::draw(text, r, settings);
+    return ofxPrecisionText::draw(text, r, settings, false);
     
 }
 
 ofxPrecisionStructure ofxPrecisionText::draw(string text, ofRectangle boundingBox, ofxPrecisionSettings settings, bool isPoint) {
     
+    if (text.size() == 0) {
+        ofxPrecisionStructure temp;
+        return temp;
+    }
     s = settings;
+    s.bounds = boundingBox;
+    if (isPoint) {
+        s.bounds.width = 0;
+        s.bounds.height = 0;
+    }
     
     /*-- Generate unique key from settings --*/
     
-    string key = getTextureKey(text);
+//    TS_START("getKeys");
+    string key = getStructureKey(text);
+    string tKey = getTextureKey(text);
+    
+//    TS_STOP("getKeys");
     
     auto itt = structCache.find(key);
     if (itt == structCache.end()) {
@@ -537,15 +634,36 @@ ofxPrecisionStructure ofxPrecisionText::draw(string text, ofRectangle boundingBo
         
     }
     
+    ofRectangle drawn = structCache[key].bounds;
+    
+    if (isPoint) {
+        ofRectangle bb = boundingBox;
+        ofRectangle sb = structCache[key].bounds;
+        if (s.horizontalAlign == 0) {
+            drawn.x = bb.x - (sb.width/2);
+        } else if (s.horizontalAlign == -1) {
+            drawn.x = bb.x - sb.width;
+        } else {
+            drawn.x = bb.x;
+        }
+        if (s.verticalAlign == 0) {
+            drawn.y = bb.y - (sb.height/2);
+        } else if (s.verticalAlign == 1) {
+            drawn.y = bb.y - sb.height;
+        } else {
+            drawn.y = bb.y;
+        }
+    }
+    
     if (s.cache) {
         
-        auto it = texCache.find(key);
+        auto it = texCache.find(tKey);
         if (it == texCache.end()) {
             
             ofLogNotice("[ofxPrecisionText]") << "Setting Texture";
             
             ofFbo * fbo = new ofFbo();
-            fbo->allocate(structCache[key].bounds.width, structCache[key].bounds.height, fboType, s.numSamples);
+            fbo->allocate(structCache[key].bounds.width, structCache[key].bounds.height, fboType, 8);
             
             fbo->begin();
             ofClear(255,0);
@@ -556,28 +674,37 @@ ofxPrecisionStructure ofxPrecisionText::draw(string text, ofRectangle boundingBo
             fbo->end();
             shouldRedraw = false;
             
-            texCache[key] = fbo->getTexture();
+            texCache[tKey] = fbo->getTexture();
             
             delete fbo;
             
         }
         
         ofSetColor(255);
-        texCache[key].draw(structCache[key].bounds);
-        
+        texCache[tKey].draw( drawn );
+        if (s.debug) {
+            ofSetColor(255,0,255);
+            ofSetLineWidth(1 * s.dpi);
+            ofNoFill();
+            ofDrawRectangle( drawn );
+        }
         
     } else {
+        
         ofPushMatrix();
-        ofTranslate(structCache[key].bounds.x, structCache[key].bounds.y);
+        ofTranslate( drawn.x, drawn.y);
         drawStructure(structCache[key]);
         ofPopMatrix();
     }
     
-    ofSetColor(255,0,0);
-//    ofDrawRectangle(boundingBox);
-//    ofSetColor(255,0,255);
-//    ofDrawRectangle(structCache[key].bounds);
+    if (s.debug) {
+        ofNoFill();
         
+        ofSetColor(0,255,255,255);
+        ofDrawRectangle(structCache[key].outerBox);
+        (isActive) ? ofSetColor(255, 0, 0) : ofSetColor(255,0,255,255);
+        ofDrawRectangle(structCache[key].innerBox);
+    }
         
     return structCache[key];
     

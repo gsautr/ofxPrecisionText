@@ -1,12 +1,18 @@
 #pragma once
 #include "ofxPrecisionText.h"
 
+#define FIND_NEXT 1
+#define FIND_PREV 2
+
+#define SELECT_LEFT 1
+#define SELECT_RIGHT 2
+
 class ofxPrecisionDocument : public ofxPrecisionText {
 private:
     
     string clipboard;
+    int selectDirection;
 public:
-    bool isActive;
     ofxPrecisionText text;
     ofxPrecisionStructure structure;
     float pressTimestamp;
@@ -15,6 +21,19 @@ public:
     vector<int> pos;
     ofPoint lastPress;
     
+    int sanitise( int i ) {
+    
+        if (i >= structure.chars.size()) i = structure.chars.size() - 1;
+        if (i < 0) i = 0;
+        return i;
+    }
+    
+    void setA( int i ) {
+        pos[0] = sanitise( i );
+    }
+    void setB( int i ) {
+        pos[1] = sanitise( i );
+    }
     void copyToClipboard() {
         if (pos[0] != pos[1]) ofGetWindowPtr()->setClipboardString(clipboard);
     }
@@ -37,26 +56,155 @@ public:
     void dragged(int x, int y){
         
         if (!isActive) return;
+        int i =  getNearestCharacter(x, y);
+        for(auto & ch : structure.chars) {
+            if (ch.index == i) ofLog() << i << ch.index << ch.letter << ch.bounds.x << ch.bounds.y << ch.bounds.width << ch.bounds.height;
+        }
+        setA( i );
         
-        pos[0] = getNearestCharacter(x, y);
+    }
+    
+    int findSibling( int i, vector<string> matches, int dir = FIND_NEXT) {
+        
+        vector<ofxPrecisionTextChar> c = structure.chars;
+        if (dir == FIND_PREV) {
+            for ( ; i >= 0; i--) {
+                if (i == 0) return i;
+                for (auto & m : matches) if (c[i-1].letter == m) return i;
+            }
+        }
+        if (dir == FIND_NEXT) {
+            for ( ; i < c.size(); i++) {
+                if (i == c.size()) return i;
+                for (auto & m : matches) if (c[i].letter == m) return i;
+            }
+        }
+        return i;
+    }
+    
+    void keyPressed(int k) {
+        
+        
+        int & a = (pos[0] < pos[1]) ? pos[0] : pos[1];
+        int & b = (pos[0] >= pos[1]) ? pos[0] : pos[1];
+        
+        if (k == OF_KEY_LEFT){
+            if (a == b) selectDirection = SELECT_LEFT;
+            if (selectDirection == SELECT_LEFT) {
+                a -= 1;
+                if (ofGetKeyPressed(OF_KEY_ALT)) a = findSibling( a, {" ", "\n"}, FIND_PREV);
+                    if (!ofGetKeyPressed(OF_KEY_SHIFT)) b = a;
+            }
+            if (selectDirection == SELECT_RIGHT) {
+                b -= 1;
+                if (ofGetKeyPressed(OF_KEY_ALT)) b = findSibling( b, {" ", "\n"}, FIND_PREV);
+                    if (!ofGetKeyPressed(OF_KEY_SHIFT)) a = b;
+            }
+        } else if (k == OF_KEY_RIGHT){
+            if (a == b) selectDirection = SELECT_RIGHT;
+            if (selectDirection == SELECT_RIGHT) {
+                b += 1;
+                if (ofGetKeyPressed(OF_KEY_ALT)) b = findSibling( b, {" ", "\n"}, FIND_NEXT);
+                    if (!ofGetKeyPressed(OF_KEY_SHIFT)) a = b;
+            }
+            if (selectDirection == SELECT_LEFT) {
+                a += 1;
+                if (ofGetKeyPressed(OF_KEY_ALT)) a = findSibling( a, {" ", "\n"}, FIND_NEXT);
+                    if (!ofGetKeyPressed(OF_KEY_SHIFT)) b = a;
+            }
+        } else if (k == OF_KEY_UP ) {
+            int cursor = (selectDirection == SELECT_RIGHT) ? b : a;
+            int i = structure.chars[cursor].line - 1;
+            if (i < 0) {
+                a = 0;
+            } else {
+                int chosen = NULL;
+                float dist = 9999;
+                for (auto & ch : structure.lines[i]) {
+                    float d = abs(ch.bounds.x - structure.chars[cursor].bounds.x);
+                    if ( d < dist ) {
+                        chosen = ch.index;
+                        dist = d;
+                    }
+                }
+                a = chosen;
+            }
+            if (!ofGetKeyPressed(OF_KEY_SHIFT)) b = a;
+            
+        } else if (k == OF_KEY_DOWN ) {
+            int cursor = (selectDirection == SELECT_RIGHT) ? b : a;
+            int i = structure.chars[cursor].line + 1;
+            if (i >= structure.lines.size()) {
+                a = structure.chars.size();
+            } else {
+                int chosen = NULL;
+                float dist = 9999;
+                for (auto & ch : structure.lines[i]) {
+                    float d = abs(ch.bounds.x - structure.chars[cursor].bounds.x);
+                    if ( d < dist ) {
+                        chosen = ch.index;
+                        dist = d;
+                    }
+                }
+                a = chosen;
+            }
+            if (!ofGetKeyPressed(OF_KEY_SHIFT)) b = a;
+            
+        }
+        
+        int max = structure.chars.size();
+        if (a > max) a = max;
+        if (b > max) b = max;
+        if (a < 0) a = 0;
+        if (b < 0) b = 0;
+    }
+    
+    void released( int x, int y) {
         
     }
     
     void pressed(int x, int y){
         
+        vector<ofxPrecisionTextChar> c = structure.chars;
+        ofRectangle outerBox = structure.outerBox;
+        ofRectangle innerBox = structure.innerBox;
         
-        isActive = structure.bounds.inside(x, y);
-        
-        if (!isActive) {
-            pos[0] = pos[1];
+        bool isInside = outerBox.inside(x, y);
+        if (!isInside) {
+            isActive = false;
+            ofLog() << "NOT INSIDE";
             return;
+        } else {
+            bool lastActive = isActive;
+            isActive = true;
+            if (!lastActive) {
+                ofLog() << "WAS NOT ACTIVE";
+            }
+        }
+        int bottom = c.back().bounds.y + c.back().bounds.height + innerBox.y;
+        int top = innerBox.y + c[0].bounds.y;
+        bool isBelow = (y > bottom);
+        bool isAbove = (y < top);
+        int aa, bb;
+        if (isBelow || isAbove) {
+            
+            if (isAbove) {
+                ofLog() << "ABOVE";
+                aa = 0;
+                bb = 0;
+            }
+            if (isBelow) {
+                ofLog() << "BELOW";
+                aa = c.size();
+                bb = c.size();
+            }
+        } else {
+            
+            aa = getNearestCharacter(x, y);
+            bb = aa;
         }
         
-        int aa = getNearestCharacter(x, y);
-        int bb = aa;
         float time = ofGetElapsedTimef();
-        
-        vector<ofxPrecisionTextChar> c = structure.chars;
         
         if (time - pressTimestamp < pressTimeLimit) {
             
@@ -69,12 +217,12 @@ public:
             if (y < p.y -2 || y > p.y + 2) pressCounter = 0;
             
             if (pressCounter == 1) {
-                for ( ; aa >= 0; aa--) if (c[aa - 1].letter == " " || aa == 0) break;
-                for ( ; bb < c.size(); bb++) if (c[bb].letter == " " || bb == c.size()) break;
+                aa = findSibling( aa, {" ", "\n"}, FIND_PREV);
+                bb = findSibling( aa, {" ", "\n"}, FIND_NEXT);
             }
             if (pressCounter == 2) {
-                for ( ; aa >= 0; aa--) if (c[aa - 1].letter == "\n" || aa == 0) break;
-                for ( ; bb < c.size(); bb++) if (c[bb].letter == "\n" || bb == c.size()) break;
+                aa = findSibling( aa, {"\n"}, FIND_PREV);
+                bb = findSibling( aa, {"\n"}, FIND_NEXT);
             }
             
         } else {
@@ -85,6 +233,8 @@ public:
         
         pos[0] = aa;
         pos[1] = bb;
+//        setA( aa );
+//        setB( bb );
         
         lastPress.x = x;
         lastPress.y = y;

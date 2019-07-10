@@ -2,7 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxPrecisionText.h"
-#include "ofxPrecisionGrid.h"
+//#include "ofxPrecisionGrid.h"
 
 
 class ofApp : public ofBaseApp{
@@ -25,5 +25,7 @@ class ofApp : public ofBaseApp{
     
         ofxPrecisionText t;
         ofxPrecisionSettings s;
+        ofEventListener charBegin;
+        ofEventListener charEnd;
     
 };

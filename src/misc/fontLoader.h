@@ -35,7 +35,7 @@ class ofxPrecisionFont {
 	public:
 		ofxPrecisionFont();
     
-        ofPath getPath(int i);
+        ofPath & getPath(int i);
         void setFont(int i);
         int getNumFonts();
         void setFontList(vector<string> list);

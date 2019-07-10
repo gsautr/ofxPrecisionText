@@ -12,7 +12,7 @@
  *
  */
 
-#include "ofxPrecisionFont.h"
+#include "fontLoader.h"
 #include "simplexCharacterSet.h"
 #include "hersheyCharacterSets.h"
 
@@ -87,8 +87,8 @@ void ofxPrecisionFont::setFont(int i) {
         
         ofLogNotice("[ofxPrecisionText]") << "Loading Hershey" << names[fontIndex];
         
-        int maxHeight = 0;
-        int maxWidth = 0;
+        float maxHeight = 0;
+        float maxWidth = 0;
         for (int i = 0; i < simplex.size(); i++) {
             
             int asciiValue = i + 32;
@@ -97,18 +97,18 @@ void ofxPrecisionFont::setFont(int i) {
             chPath.moveTo(getSimplex(asciiValue - 32, 2, asciiValue - 32, 3), getSimplex(asciiValue - 32, 3));
             
             int height = 0;
-            int width = simplex[asciiValue - 32][1];
+            float width = simplex[asciiValue - 32][1];
             
             for (int i = 4; i <= simplex[asciiValue - 32][0] * 2; i += 2)
             {
-                int x = getSimplex(asciiValue - 32, i, asciiValue - 32,i + 1);
-                int y = getSimplex(asciiValue - 32,i + 1);
+                float x = getSimplex(asciiValue - 32, i, asciiValue - 32,i + 1);
+                float y = getSimplex(asciiValue - 32,i + 1);
                 if (y > height) height = y;
                 
                 if (x != -1) chPath.lineTo(x, y);
                 if (x == -1) {
-                    int xx = getSimplex(asciiValue - 32, i + 2, asciiValue - 32, i + 3);
-                    int yy = getSimplex(asciiValue - 32, i + 3);
+                    float xx = getSimplex(asciiValue - 32, i + 2, asciiValue - 32, i + 3);
+                    float yy = getSimplex(asciiValue - 32, i + 3);
                     
                     chPath.moveTo(xx, yy);
                     i += 2;
@@ -160,7 +160,7 @@ float ofxPrecisionFont::getSimplex(int a, int b, int aa, int bb) {
     return simplex[a][b] + ita;
 }
 
-ofPath ofxPrecisionFont::getPath(int i) {
+ofPath & ofxPrecisionFont::getPath(int i) {
     return fontCache[names[fontIndex]].chars[i - 32].path;
 }
 

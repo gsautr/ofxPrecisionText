@@ -6,10 +6,19 @@ void ofApp::setup(){
     
     ofLog::setAutoSpace(true);
     ofSetFrameRate(60.0f);
-    
+    TIME_SAMPLE_SET_FRAMERATE(60.0f); //specify a target framerate
+
     doc.setup();
     input.setup();
     
+    string defaultText = "# Using Markdown\n\nCurrently supports stuff.";
+    markdownText = defaultText;
+    input.setText(defaultText);
+    
+    
+    inputUpdated = input.updated.newListener([this](ofxPrecisionStructure & s){
+        markdownText = s.text;
+    });
 }
 
 //--------------------------------------------------------------
@@ -21,23 +30,28 @@ void ofApp::update(){
 void ofApp::draw(){
     
     
-    ofBackground(0);
-    string defaultText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vel scelerisque sapien. Quisque sit amet semper ante, sed venenatis arcu. Ut commodo lectus non condimentum blandit. Vestibulum accumsan, purus at mollis tincidunt, quam nisi tincidunt dolor, vel tristique nisi libero eget tellus. Integer pulvinar ex cursus purus porttitor convallis. Ut eget est efficitur, placerat felis vitae, tincidunt nunc. Pellentesque commodo sem nec nibh eleifend fermentum. Nam feugiat est lorem, sed molestie ante convallis at. Aliquam suscipit pharetra velit vitae convallis. Aenean suscipit a ante sed faucibus. Donec justo arcu, pulvinar quis ligula vitae, lacinia sollicitudin sem.";
-    
+    int margin = 40;
+    ofBackground(20);
+    ofEnableSmoothing();
     settings.markdown = false;
-    settings.cache = false;
-    settings.fontSize = 16;
-//    settings.strokeColor = ofColor(0);
+    settings.fontSize = 18;
+    settings.margin = margin;
+    settings.debug = true;
+//    settings.cache = false;
+    ofRectangle bounds( 0, 0, ofGetWidth()/2, ofGetHeight());
     
-    ofRectangle bounds( 100, 100, ofGetWidth()/2 - 200, ofGetHeight() - 200 );
-    
-    input.setText(defaultText);
     string inputText = input.draw(bounds, settings);
     
-    settings.markdown = true;
-    
+    ofxPrecisionSettings settingsRender;
+    settingsRender.fontSize = 18;
+    settingsRender.strokeColor = ofColor(20);
+    settingsRender.debug = true;
+    settingsRender.margin = margin;
     bounds.x += ofGetWidth()/2;
-    ofxPrecisionStructure s = doc.draw(inputText, bounds, settings);
+    ofFill();
+    ofSetColor( 255, 250, 240 );
+    ofDrawRectangle(ofGetWidth()/2, 0, ofGetWidth()/2, ofGetHeight());
+    ofxPrecisionStructure s = doc.draw(markdownText, bounds, settingsRender);
     
 }
 
@@ -45,16 +59,19 @@ void ofApp::draw(){
 //--------------------------------------------------------------
 void ofApp::keyPressed(ofKeyEventArgs & e){
     
-    if (e.key == 'c') doc.copyToClipboard();
-//    input.keyPressed(e.key);
+    if (e.key == 'c' && ofGetKeyPressed(OF_KEY_COMMAND)) doc.copyToClipboard();
+    input.keyPressed(e.key);
     
+//    if (e.key == ' ') settings.cache = !settings.cache;
+//    if (e.key == 'a') ofEnableSmoothing();
+//    if (e.key == 's') ofDisableSmoothing();
     
-    if (e.key == 'a') settings.horizontalAlign = -1;
-    if (e.key == 's') settings.horizontalAlign = 0;
-    if (e.key == 'd') settings.horizontalAlign = 1;
-    if (e.key == 'q') settings.verticalAlign = -1;
-    if (e.key == 'w') settings.verticalAlign = 0;
-    if (e.key == 'e') settings.verticalAlign = 1;
+//    if (e.key == 'a') settings.horizontalAlign = -1;
+//    if (e.key == 's') settings.horizontalAlign = 0;
+//    if (e.key == 'd') settings.horizontalAlign = 1;
+//    if (e.key == 'q') settings.verticalAlign = -1;
+//    if (e.key == 'w') settings.verticalAlign = 0;
+//    if (e.key == 'e') settings.verticalAlign = 1;
     
 }
 

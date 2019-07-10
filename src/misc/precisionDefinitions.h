@@ -19,6 +19,7 @@ struct ofxPrecisionTextChar {
     int isHeading;
     ofRectangle bounds;
     int index;
+    int line;
 };
 
 struct ofxPrecisionStructure {
@@ -37,7 +38,10 @@ struct ofxPrecisionStructure {
     int removed;
     
     ofRectangle bounds;
+    ofRectangle outerBox;
+    ofRectangle innerBox;
     vector<ofxPrecisionTextChar> chars;
+    vector<vector<ofxPrecisionTextChar>> lines;
     
 };
 
@@ -79,6 +83,10 @@ struct ofxPrecisionSettings {
     int horizontalAlign;
     int verticalAlign;
     
+    ofRectangle bounds;
+    bool debug;
+    float margin;
+    
     ofxPrecisionSettings() {
         
         markdown = true;
@@ -86,12 +94,12 @@ struct ofxPrecisionSettings {
         cache = true;
         
         fontIndex = 0;
-        headingScale = 3;
+        headingScale = 2.5;
         
         strokeColor = ofColor(255);
         linkColor = ofColor(0,255,255);
         
-        pixelAligned = true;
+        pixelAligned = false;
 #ifdef TARGET_RASPBERRY_PI
         numSamples = 0;
 #else
@@ -106,6 +114,10 @@ struct ofxPrecisionSettings {
         
         horizontalAlign = -1;
         verticalAlign = 1;
+        
+        margin = 0;
+        debug = false;
+        
     }
 };
 

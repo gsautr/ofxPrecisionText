@@ -3,6 +3,7 @@
 #include "ofMain.h"
 #include "ofxPrecisionDocument.h"
 #include "ofxPrecisionInput.h"
+#include "ofxTimeMeasurements.h"
 
 
 class ofApp : public ofBaseApp{
@@ -27,4 +28,6 @@ class ofApp : public ofBaseApp{
         ofxPrecisionDocument doc;
         ofxPrecisionInput input;
         ofxPrecisionSettings settings;
+        ofEventListener inputUpdated;
+        string markdownText;
 };

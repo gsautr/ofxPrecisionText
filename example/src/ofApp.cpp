@@ -15,6 +15,13 @@ void ofApp::setup(){
     ofLog::setAutoSpace(true);
     ofSetFrameRate(120.0f);
     
+    charBegin = t.charBegin.newListener([this](ofxPrecisionTextChar & ch){
+        
+        ofSetColor(255,255,0);
+        ofSetLineWidth(1);
+        ofNoFill();
+//        ofDrawRectangle(0,0,ch.bounds.width, ch.bounds.height);
+    });
     
     
 }
@@ -52,8 +59,7 @@ void ofApp::draw(){
     D.setPosition( D.getPosition() * s.dpi );
     E.setPosition( E.getPosition() * s.dpi );
     
-    ofxPrecisionSettings s;
-    
+    vector<ofRectangle> rects = {A, B, C, D, E };
     
     vector<ofxPrecisionStructure> structures;
     
@@ -61,32 +67,65 @@ void ofApp::draw(){
     ofPoint hB(A.x, 100 * s.dpi);
     ofPoint hC(D.x, 100 * s.dpi);
     
-    structures.push_back( t.draw("ofPoint", hA, s) );
-    structures.push_back( t.draw("ofRectangle", hB, s) );
-    structures.push_back( t.draw("ofxPrecisionText", hC, s) );
     
     
     structures.push_back( t.draw("Hello World", B.getCenter(), s) );
     structures.push_back( t.draw("Hello World", C, s) );
-    structures.push_back( t.draw("The quick brown fox jumps over the lazy dog.", A, s) );
+    structures.push_back( t.draw("The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. ", A, s) );
     
+    /*-- draw headings --*/
     
-//    ofxPrecisionRow row(0,0,ofGetWidth(), ofGetHeight());
-//    row.addCol();
-//    row.addCol();
-//    for (auto & rr : row.addCol()) {
-//        ofSetColor(255,255,0);
-//        ofNoFill();
-//        ofDrawRectangle(rr);
-//    }
+    ofxPrecisionSettings headerSettings;
+    headerSettings.horizontalAlign = 1;
+    headerSettings.fontSize = 32;
+    headerSettings.strokeWidth = 2;
     
+    structures.push_back( t.draw("ofPoint", hA, headerSettings) );
+    structures.push_back( t.draw("ofRectangle", hB, headerSettings) );
+    structures.push_back( t.draw("ofxPrecisionText", hC, headerSettings) );
+    
+    for (auto & r : rects) {
+        ofSetColor(0,255,255);
+        ofNoFill();
+        ofSetLineWidth(1 * s.dpi);
+        ofDrawRectangle(r);
+    }
     
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
     
+    if (key == 'q') s.fontSize -= 0.25;
+    if (key == 'w') s.fontSize += 0.25;
     
+    if (key == 'e') s.strokeWidth -= 0.2;
+    if (key == 'r') s.strokeWidth += 0.2;
+    
+    if (key == 'a') s.lineHeight -= 0.1;
+    if (key == 's') s.lineHeight += 0.1;
+    
+    if (key == 'd') s.letterSpacing -= 0.5;
+    if (key == 'f') s.letterSpacing += 0.5;
+    
+    if (key == 'z') s.fontIndex -= 1;
+    if (key == 'x') s.fontIndex += 1;
+    if (s.fontIndex < 0) s.fontIndex = t.fontList.size() - 1;
+    if (s.fontIndex >= t.fontList.size()) s.fontIndex = 0;
+    
+    if (key == OF_KEY_LEFT) s.horizontalAlign -= 1;
+    if (key == OF_KEY_RIGHT) s.horizontalAlign += 1;
+    if (s.horizontalAlign > 1) s.horizontalAlign = -1;
+    if (s.horizontalAlign < -1) s.horizontalAlign = 1;
+    
+    if (key == OF_KEY_DOWN) s.verticalAlign -= 1;
+    if (key == OF_KEY_UP) s.verticalAlign += 1;
+    if (s.verticalAlign > 1) s.verticalAlign = -1;
+    if (s.verticalAlign < -1) s.verticalAlign = 1;
+    
+    if (key == ' ') {
+        s.debug = !s.debug;
+    }
     
 }
 

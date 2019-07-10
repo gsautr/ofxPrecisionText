@@ -6,17 +6,17 @@
  */
 
 #pragma once
-#include "ofxPrecisionFont.h"
-#include "ofxPrecisionDefinitions.h"
+#include "fontLoader.h"
+#include "precisionDefinitions.h"
 
 class ofxPrecisionText {
 private:
     
-    ofxPrecisionSettings s;
     int fboType;
     bool samplesChanged;
     bool shouldRedraw;
-    ofFbo fbo;
+    ofFbo tempFbo;
+    
     
     vector<string> splitString(int fromChar, string text, vector<int>);
     
@@ -30,18 +30,23 @@ private:
     std::map<string, ofTrueTypeFont> fontCache;
     
     string defineFont(float fSize);
+    string getCharKey(ofxPrecisionTextChar & ch);
+    string getStructureKey(string text);
     string getTextureKey(string text);
     string getMarkdownKey(string text);
-    string getStructureKey(string text);
     
     ofRectangle getBounds(string text, float fSize, float x, float y);
     void drawString(string text, float fSize, float xx, float yy);
     void drawChar(ofxPrecisionTextChar & ch);
+    void drawCharPath(ofxPrecisionTextChar & ch);
     
     ofxPrecisionStructure drawStructure(ofxPrecisionStructure structure);
     ofxPrecisionStructure generateStructure(string text, ofRectangle boundingBox, bool dontDraw = false, bool isPoint = false);
     
 public:
+    bool isActive;
+    ofxPrecisionSettings s;
+    std::map<string, ofTexture> charTexCache;
     ofxPrecisionFont hershey;
     ofEvent<ofxPrecisionTextChar &> charBegin;
     ofEvent<ofxPrecisionTextChar &> charEnd;
