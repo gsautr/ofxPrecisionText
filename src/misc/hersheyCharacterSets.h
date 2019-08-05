@@ -1,7 +1,7 @@
 /* Simplex sets: 
 *
 * gothicita
-* symbolic
+* symbolicc
 * scripts
 * timesrb
 * cyrillic

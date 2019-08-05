@@ -1,1 +1,2 @@
 ofxPrecisionText
+ofxTimeMeasurements
